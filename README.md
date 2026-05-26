@@ -49,6 +49,61 @@ test3/
 └── requirements.txt        # 依赖列表
 ```
 
+## 开发指南
+
+本项目包含三份开发指南文档，用于 Vibe Coding 协作开发：
+
+### 文档说明
+
+| 文档 | 用途 | 适用场景 |
+|------|------|----------|
+| `guide.md` | **基础版**：RAG 检索增强服务 | 从零搭建 RAG 服务（向量入库 + 检索 + HTTP 接口） |
+| `guide_agent_extension_clean.md` | **精简版**：ReAct Agent 扩展 | 在已有 RAG 服务基础上扩展 Agent 能力，适合作为 Vibe Coding 指引 |
+| `guide_agent_extension.md` | **详细版**：ReAct Agent 扩展（参考用） | 包含完整实现细节，可借鉴具体代码和设计思路 |
+
+### 使用方式
+
+**场景一：从零开始搭建 RAG 服务**
+
+```
+阅读 guide.md → 按章节逐步开发 → 完成基础 RAG 服务
+```
+
+**场景二：在 RAG 服务基础上扩展 Agent**
+
+```
+阅读 guide_agent_extension_clean.md → 理解架构变更 → 与 AI 协作开发
+```
+
+**场景三：遇到具体实现问题**
+
+```
+查阅 guide_agent_extension.md → 找到对应章节 → 参考详细实现
+```
+
+### 文档关系
+
+```
+guide.md（基础 RAG 服务）
+    │
+    └──→ guide_agent_extension_clean.md（Agent 扩展指引）
+              │
+              └──→ guide_agent_extension.md（详细实现参考）
+```
+
+### 为什么有两个 Agent 扩展文档？
+
+| 对比项 | `guide_agent_extension_clean.md` | `guide_agent_extension.md` |
+|--------|----------------------------------|---------------------------|
+| 定位 | Vibe Coding 指引 | 实现参考手册 |
+| 内容 | 架构设计 + 任务清单 + 完成标志 | 完整代码 + 详细步骤 |
+| 灵活性 | 高（AI 可自由发挥） | 低（固定了具体实现） |
+| 适用 | 与 AI 协作开发 | 查阅具体实现细节 |
+
+**建议**：开发时以 `clean` 版本为主，遇到问题时查阅详细版参考。
+
+---
+
 ## 开发进度
 
 ### Step 1: 项目初始化 —— 目录重组与迁移 ✅
