@@ -23,10 +23,40 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 """
 
+CREATE_MOCK_CUSTOMERS_TABLE = """
+CREATE TABLE IF NOT EXISTS mock_customers (
+    user_id       VARCHAR(128) PRIMARY KEY,
+    display_name  VARCHAR(128) NOT NULL,
+    status        VARCHAR(16) NOT NULL CHECK(status IN ('active', 'disabled')),
+    created_at    TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_PRODUCTS_TABLE = """
+CREATE TABLE IF NOT EXISTS products (
+    product_id   VARCHAR(16) PRIMARY KEY,
+    name         VARCHAR(128) NOT NULL,
+    category     VARCHAR(32) NOT NULL
+);
+"""
+
+CREATE_MOCK_ORDERS_TABLE = """
+CREATE TABLE IF NOT EXISTS mock_orders (
+    order_id      VARCHAR(32) PRIMARY KEY,
+    user_id       VARCHAR(128) NOT NULL REFERENCES mock_customers(user_id),
+    product_id    VARCHAR(16) NOT NULL REFERENCES products(product_id),
+    purchased_at  DATE NOT NULL,
+    status        VARCHAR(16) NOT NULL,
+    amount        NUMERIC(10, 2) NOT NULL,
+    created_at    TIMESTAMP DEFAULT NOW()
+);
+"""
+
 CREATE_INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_turn_number ON messages(conversation_id, turn_number);
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_mock_orders_user_id ON mock_orders(user_id);
 """
 
 INSERT_CONVERSATION = """
@@ -92,8 +122,36 @@ DELETE_CONVERSATION = """
 DELETE FROM conversations WHERE conversation_id = %s;
 """
 
+UPSERT_MOCK_CUSTOMER = """
+INSERT INTO mock_customers (user_id, display_name, status)
+VALUES (%s, %s, %s)
+ON CONFLICT (user_id) DO UPDATE
+SET display_name = EXCLUDED.display_name, status = EXCLUDED.status;
+"""
+
+UPSERT_PRODUCT = """
+INSERT INTO products (product_id, name, category)
+VALUES (%s, %s, %s)
+ON CONFLICT (product_id) DO UPDATE
+SET name = EXCLUDED.name, category = EXCLUDED.category;
+"""
+
+UPSERT_MOCK_ORDER = """
+INSERT INTO mock_orders (order_id, user_id, product_id, purchased_at, status, amount)
+VALUES (%s, %s, %s, %s, %s, %s)
+ON CONFLICT (order_id) DO UPDATE
+SET user_id = EXCLUDED.user_id,
+    product_id = EXCLUDED.product_id,
+    purchased_at = EXCLUDED.purchased_at,
+    status = EXCLUDED.status,
+    amount = EXCLUDED.amount;
+"""
+
 
 def init_tables(db_manager):
     db_manager.execute(CREATE_CONVERSATIONS_TABLE)
     db_manager.execute(CREATE_MESSAGES_TABLE)
+    db_manager.execute(CREATE_MOCK_CUSTOMERS_TABLE)
+    db_manager.execute(CREATE_PRODUCTS_TABLE)
+    db_manager.execute(CREATE_MOCK_ORDERS_TABLE)
     db_manager.execute(CREATE_INDEXES)

@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 首批实施计划已完成，准备执行 Task 1：模拟业务数据基线 |
+| 当前执行阶段 | Phase 1 Task 1 已完成，准备执行 Task 2：内部试用身份上下文 |
 
 ## 1. 使用规则
 
@@ -106,7 +106,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `P1-001` | `P0` | 设计并实现内部试用用户认证上下文 | `M1` | `PENDING` | API 能识别当前用户，测试账号可用 | 认证方式在详细计划确定 |
 | `P1-002` | `P0` | 实现会话归属和授权校验 | `P1-001` | `PENDING` | 用户无法查看其他用户会话 | 覆盖拒绝测试 |
-| `P1-003` | `P0` | 增加产品、模拟客户与模拟订单数据模型/种子数据 | `M1` | `PENDING` | 可查询 X1/X2/C1/G2 对应订单案例 | 不使用真实个人数据 |
+| `P1-003` | `P0` | 增加产品、模拟客户与模拟订单数据模型/种子数据 | `M1` | `✅ DONE` | 可查询 X1/X2/C1/G2 对应订单案例 | 幂等种子数据覆盖两个用户和四类产品，不使用真实个人数据 |
 | `P1-004` | `P0` | 增加模拟售后工单与待确认动作数据模型 | `P1-003` | `PENDING` | 支持工单状态及确认动作幂等存储 | 写操作基础 |
 | `P1-005` | `P1` | 增加 Agent run、tool call 和风险事件审计模型 | `M1` | `PENDING` | 核心调用链可按会话检索复盘 | 不保存完整思维链 |
 
@@ -198,6 +198,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P0-014`, `P0-016`, `M1` | `pytest -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`scripts\verify_migration.py` 成功；默认 `scripts\smoke_test.py` 在未开启门禁时跳过外部/持久化路径；`git diff --check` 通过 | 外部冒烟改为 `RUN_EXTERNAL_SMOKE=true` 显式选择；保留一条第三方弃用告警待后续依赖升级处理 | 准备 Phase 1 内部试用 MVP 详细实施计划 |
 | 2026-05-26 | `DOC-007`, `DOC-008` | 产品展示名称修正为 `QA-agent`；用户确认 Phase 1 首批设计限定为身份上下文、会话授权和模拟订单只读查询 | Python/运行技术标识可使用 `qa_agent` 或 `qa-agent`；已完成状态使用 `✅ DONE` 展示 | 编写并执行 Phase 1 首批实施计划 |
 | 2026-05-26 | `DOC-009` | Phase 1 首批实施计划已拆为模拟数据、身份上下文、会话授权、订单只读 API 与本地验证五个批次 | `P1-006` 本轮只准备服务/API 底座，保持未完成直到 Agent Tool 接入 | 执行 `P1-003` 模拟业务数据基线 |
+| 2026-05-26 | `P1-003` | `pytest tests\test_mock_data.py tests\test_health_and_initialization.py -q --basetemp=.pytest_cache\tmp` 通过（7 passed） | 新增 mock customers/products/orders schema 与幂等 seed；真实数据库写入延后到切片验收 | 实现内部试用身份上下文 |
 
 ## 10. 当前待办焦点
 
