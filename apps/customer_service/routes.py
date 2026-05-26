@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Request
 from .schemas import (
     ChatRequest,
     ChatResponse,
+    CitationItem,
     CreateConversationRequest,
     CreateConversationResponse,
     ConversationDetail,
@@ -39,6 +40,16 @@ async def chat(request: Request, body: ChatRequest):
             type=response.type,
             content=response.content,
             conversation_id=response.conversation_id,
+            citations=[
+                CitationItem(
+                    source_id=item.source_id,
+                    title=item.title,
+                    section=item.section,
+                    excerpt=item.excerpt,
+                )
+                for item in response.citations
+            ],
+            metadata=response.metadata,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Agent 执行错误: {e}")

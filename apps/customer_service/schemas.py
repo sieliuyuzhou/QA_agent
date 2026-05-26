@@ -22,6 +22,13 @@ class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息", min_length=1)
 
 
+class CitationItem(BaseModel):
+    source_id: str = Field(..., description="来源标识")
+    title: str = Field(..., description="来源标题")
+    section: str = Field(..., description="来源章节或问题")
+    excerpt: str = Field(..., description="支持回答的来源摘录")
+
+
 class ChatResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
@@ -40,6 +47,8 @@ class ChatResponse(BaseModel):
     )
     content: str = Field(..., description="响应内容")
     conversation_id: str = Field(..., description="会话ID")
+    citations: List[CitationItem] = Field(default_factory=list, description="知识来源引用")
+    metadata: Optional[dict] = Field(default=None, description="Agent 执行元数据")
 
 
 class CreateConversationRequest(BaseModel):

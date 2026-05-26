@@ -12,13 +12,27 @@ class ToolParameter:
 
 
 @dataclass
+class Citation:
+    source_id: str
+    title: str
+    section: str
+    excerpt: str
+
+
+@dataclass
+class ToolResult:
+    content: str
+    citations: list[Citation] = field(default_factory=list)
+
+
+@dataclass
 class Tool:
     name: str
     description: str
     func: Callable
     parameters: list[ToolParameter] = field(default_factory=list)
 
-    def run(self, params: dict) -> str:
+    def run(self, params: dict) -> Any:
         required_params = [p for p in self.parameters if p.required]
         missing = [p.name for p in required_params if p.name not in params]
         if missing:

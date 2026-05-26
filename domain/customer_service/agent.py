@@ -1,8 +1,9 @@
 import re
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
+from tools.base import ToolResult
 from .prompts import build_system_prompt, build_user_prompt
 
 
@@ -12,6 +13,7 @@ class AgentResponse:
     content: str
     conversation_id: str
     metadata: Optional[dict] = None
+    citations: list = field(default_factory=list)
 
 
 class CustomerServiceAgent:
@@ -120,7 +122,7 @@ class CustomerServiceAgent:
         
         return {}
 
-    def _dispatch_tool(self, action_name: str, action_input: str) -> str:
+    def _dispatch_tool(self, action_name: str, action_input: str) -> Any:
         tool = self._find_tool(action_name)
         if not tool:
             return f"错误：未找到名为 '{action_name}' 的工具"
@@ -145,6 +147,7 @@ class CustomerServiceAgent:
         tools_desc = self._build_tools_description()
         
         step_history = []
+        citations = []
         
         for step in range(self.max_steps):
             history_str = self._format_step_history(step_history)
@@ -217,12 +220,18 @@ class CustomerServiceAgent:
                     content=final_answer,
                     conversation_id=conversation_id,
                     metadata={"total_steps": step + 1},
+                    citations=citations,
                 )
             
             if verbose:
                 print(f"\n[调用工具] {action_name}[{action_input}]")
             
-            observation = self._dispatch_tool(action_name, action_input)
+            tool_result = self._dispatch_tool(action_name, action_input)
+            if isinstance(tool_result, ToolResult):
+                observation = tool_result.content
+                citations.extend(tool_result.citations)
+            else:
+                observation = tool_result
             
             if verbose:
                 obs_preview = observation[:300] + "..." if len(observation) > 300 else observation
@@ -246,4 +255,5 @@ class CustomerServiceAgent:
             content=fallback_message,
             conversation_id=conversation_id,
             metadata={"total_steps": self.max_steps},
+            citations=citations,
         )
