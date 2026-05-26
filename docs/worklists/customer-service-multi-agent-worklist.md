@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 Task 3 已完成，准备执行 Task 4：授权订单只读 API 底座 |
+| 当前执行阶段 | Phase 1 Task 4 已完成，准备执行 Task 5：本地验证 |
 
 ## 1. 使用规则
 
@@ -114,7 +114,7 @@
 
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `P1-006` | `P0` | 实现授权的模拟订单查询工具 | `P1-001`, `P1-003` | `PENDING` | 仅返回当前用户订单；越权被拦截 | `MockOrderTool` |
+| `P1-006` | `P0` | 实现授权的模拟订单查询工具 | `P1-001`, `P1-003` | `PENDING` | 仅返回当前用户订单；越权被拦截 | 已完成授权只读 Service/API 底座；待 `MockOrderTool` 接入后关闭任务 |
 | `P1-007` | `P0` | 区分产品知识与售后政策检索能力 | `M1` | `PENDING` | 可针对产品/政策返回结构化来源 | 可复用知识检索底座 |
 | `P1-008` | `P0` | 实现售后资格规则服务 | `P1-003`, `P1-007` | `PENDING` | 退换、保修、人为损坏、过保结论测试 100% 正确 | 不依赖 LLM 决策 |
 | `P1-009` | `P0` | 实现待确认动作与模拟工单创建工具 | `P1-004`, `P1-008` | `PENDING` | 未确认不建单；确认后仅建一单；失败可追踪 | `MockTicketTool` |
@@ -201,6 +201,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P1-003` | `pytest tests\test_mock_data.py tests\test_health_and_initialization.py -q --basetemp=.pytest_cache\tmp` 通过（7 passed） | 新增 mock customers/products/orders schema 与幂等 seed；真实数据库写入延后到切片验收 | 实现内部试用身份上下文 |
 | 2026-05-26 | `P1-001` | `pytest tests\test_mock_data.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py -q --basetemp=.pytest_cache\tmp` 通过（11 passed） | `X-QA-User-Id` 仅解析已启用内部测试用户；不宣称生产认证能力 | 强制会话归属隔离 |
 | 2026-05-26 | `P1-002` | `pytest tests\test_identity_and_conversations.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（13 passed） | 会话创建和查询不再接受调用方选择用户；越权读取/续接统一返回 `404` | 建立授权订单只读 API 底座 |
+| 2026-05-26 | `P1-006`（底座部分） | `pytest tests\test_mock_data.py tests\test_orders_api.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（26 passed） | 已提供按当前身份过滤的订单 Service/API；不提前将订单查询注册为 Agent Tool | 执行本地 schema/seed 与完整回归验证 |
 
 ## 10. 当前待办焦点
 

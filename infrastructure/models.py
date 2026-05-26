@@ -109,6 +109,23 @@ FROM mock_customers
 WHERE user_id = %s AND status = 'active';
 """
 
+SELECT_ORDERS_BY_USER = """
+SELECT o.order_id, p.product_id, p.name, p.category, o.purchased_at,
+       o.status, o.amount
+FROM mock_orders o
+JOIN products p ON p.product_id = o.product_id
+WHERE o.user_id = %s AND (%s IS NULL OR o.status = %s)
+ORDER BY o.purchased_at DESC, o.order_id ASC;
+"""
+
+SELECT_ORDER_BY_ID_AND_USER = """
+SELECT o.order_id, p.product_id, p.name, p.category, o.purchased_at,
+       o.status, o.amount
+FROM mock_orders o
+JOIN products p ON p.product_id = o.product_id
+WHERE o.order_id = %s AND o.user_id = %s;
+"""
+
 UPDATE_CONVERSATION_TITLE = """
 UPDATE conversations SET title = %s, updated_at = NOW()
 WHERE conversation_id = %s;

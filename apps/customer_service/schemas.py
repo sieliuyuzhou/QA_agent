@@ -51,6 +51,21 @@ class ChatResponse(BaseModel):
     metadata: Optional[dict] = Field(default=None, description="Agent 执行元数据")
 
 
+class OrderItem(BaseModel):
+    order_id: str
+    product_id: str
+    product_name: str
+    category: str
+    purchased_at: str
+    status: str
+    amount: str
+
+
+class OrderListResponse(BaseModel):
+    orders: List[OrderItem] = Field(default_factory=list)
+    total: int
+
+
 class CreateConversationRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={

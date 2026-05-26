@@ -315,10 +315,13 @@ python scripts/smoke_test.py
    - `ConversationDetail` / `ConversationListResponse`
 
 3. **API 路由** (`apps/customer_service/routes.py`)
-   - `POST /api/chat`：发送消息（自动创建会话）
-   - `POST /api/conversations`：创建会话
-   - `GET /api/conversations/{id}`：获取会话详情
-   - `GET /api/conversations?user_id=xxx`：列出用户会话
+   - 内部试用接口通过请求头 `X-QA-User-Id` 识别测试用户
+   - `POST /api/chat`：发送消息（自动创建当前用户会话）
+   - `POST /api/conversations`：为当前用户创建会话
+   - `GET /api/conversations/{id}`：获取当前用户会话详情
+   - `GET /api/conversations`：列出当前用户会话
+   - `GET /api/orders`：列出当前用户的模拟订单
+   - `GET /api/orders/{id}`：获取当前用户的一笔模拟订单
 
 4. **启动方式**
    ```bash
@@ -373,7 +376,18 @@ python scripts/init_db.py
 python scripts/import_faq.py
 ```
 
-### 5. 验证安装
+### 5. 初始化内部试用数据并查询订单
+
+`X-QA-User-Id` 仅供内部试用模拟数据使用，不可作为生产环境认证机制。
+
+```powershell
+.\.venv\Scripts\python.exe scripts\seed_mock_data.py
+
+$headers = @{ "X-QA-User-Id" = "customer_alice" }
+Invoke-RestMethod -Uri http://localhost:8000/api/orders -Headers $headers
+```
+
+### 6. 验证安装
 
 ```powershell
 # 离线回归测试：不调用已配置的 LLM 或 Embedding 接口

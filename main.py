@@ -8,10 +8,11 @@ load_dotenv()
 
 from llm import chat_service
 from infrastructure.rag import get_store
-from utils import ConversationManager, CustomerRepository
+from utils import ConversationManager, CustomerRepository, OrderRepository
 from tools import search_faq_tool
 from domain import CustomerServiceAgent
-from apps.customer_service.routes import router
+from domain.customer_service.orders import OrderQueryService
+from apps.customer_service import order_router, router
 
 
 conversation_manager: ConversationManager = None
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
     
     app.state.conversation_manager = conversation_manager
     app.state.customer_repository = CustomerRepository(conversation_manager.db)
+    app.state.order_service = OrderQueryService(
+        OrderRepository(conversation_manager.db)
+    )
     app.state.agent = agent
     
     yield
@@ -48,25 +52,27 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="智能客服 API",
-    description="基于 ReAct Agent 的智能客服系统",
+    title="QA-agent API",
+    description="QA-agent 智能客服系统",
     version="1.0.0",
     lifespan=lifespan,
 )
 
 app.include_router(router, prefix="/api")
+app.include_router(order_router, prefix="/api")
 
 
 @app.get("/")
 async def root():
     return {
-        "message": "智能客服 API",
+        "message": "QA-agent API",
         "docs": "/docs",
         "endpoints": {
             "chat": "POST /api/chat",
             "create_conversation": "POST /api/conversations",
             "get_conversation": "GET /api/conversations/{id}",
             "list_conversations": "GET /api/conversations",
+            "orders": "GET /api/orders",
         }
     }
 

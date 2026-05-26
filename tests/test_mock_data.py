@@ -94,3 +94,31 @@ def test_customer_repository_rejects_missing_user():
     repository_type = _load_mock_repository()
 
     assert repository_type(RowDB(None)).find_active("unknown") is None
+
+
+def test_order_detail_query_is_scoped_to_current_user():
+    try:
+        orders_module = importlib.import_module("domain.customer_service.orders")
+        repository_module = importlib.import_module("utils.mock_data")
+        repository_type = repository_module.OrderRepository
+    except (ModuleNotFoundError, AttributeError):
+        pytest.fail("read-only order service must scope order lookup to current user")
+
+    db = RowDB(
+        (
+            "ORD-A-X1",
+            "X1",
+            "X1 智能门锁",
+            "smart_lock",
+            "2026-05-22",
+            "delivered",
+            "1299.00",
+        )
+    )
+
+    order = orders_module.OrderQueryService(repository_type(db)).get_order(
+        "customer_alice", "ORD-A-X1"
+    )
+
+    assert order.order_id == "ORD-A-X1"
+    assert db.calls[0][1] == ("ORD-A-X1", "customer_alice")

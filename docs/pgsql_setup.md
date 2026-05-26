@@ -93,6 +93,14 @@ CONVERSATION_MAX_CONTEXT_TURNS=5
 
 应用服务启动时不再自动建表或吞掉初始化失败。新环境和 schema 变更部署应将此命令作为明确的 bootstrap 步骤执行。
 
+### 2.5 写入内部试用模拟数据
+
+```powershell
+.\.venv\Scripts\python.exe scripts\seed_mock_data.py
+```
+
+该命令以幂等方式写入 `QA-agent` 内部试用所需的测试客户、产品和订单。接口使用 `X-QA-User-Id` 请求头读取各自模拟订单；该请求头不能替代生产环境认证。
+
 ---
 
 ## 三、部署后校验
@@ -100,7 +108,8 @@ CONVERSATION_MAX_CONTEXT_TURNS=5
 ### 3.1 初始化后运行冒烟测试
 
 ```powershell
-python scripts/smoke_test.py
+$env:RUN_EXTERNAL_SMOKE="true"
+.\.venv\Scripts\python.exe scripts\smoke_test.py
 ```
 
 预期输出包含：
@@ -124,7 +133,14 @@ python scripts/smoke_test.py
 [OK] 关闭会话成功
 ```
 
-### 3.2 使用 psql 验证（可选）
+### 3.2 查询内部试用订单
+
+```powershell
+$headers = @{ "X-QA-User-Id" = "customer_alice" }
+Invoke-RestMethod -Uri http://localhost:8000/api/orders -Headers $headers
+```
+
+### 3.3 使用 psql 验证（可选）
 
 ```powershell
 # 进入容器内部
