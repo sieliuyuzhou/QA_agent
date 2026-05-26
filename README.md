@@ -194,9 +194,42 @@ response = chat_service.chat("你好")
 
 ---
 
-### Step 5: 领域层 —— ReAct Agent ⏳
+### Step 5: 领域层 —— ReAct Agent ✅
 
-待开发...
+**已完成工作：**
+
+1. **Prompt 模板** (`domain/customer_service/prompts.py`)
+   - `SYSTEM_PROMPT`：包含角色设定、工具说明、工作流程、输出格式
+   - `build_prompt()`：填充 `{tools}`、`{context}`、`{user_input}`、`{history}` 占位符
+
+2. **Agent 核心实现** (`domain/customer_service/agent.py`)
+   - `AgentResponse`：响应结构体（type、content、conversation_id、metadata）
+   - `CustomerServiceAgent`：ReAct Agent 主体
+     - 构造函数注入：llm、conversation_manager、tools、max_steps
+     - `run(user_input, conversation_id)` → AgentResponse
+
+3. **ReAct 循环实现**
+   - 持久化用户消息 → 获取上下文 → 循环执行 → 返回结果
+   - 支持的 Action：`search_faq[关键词]`、`Finish[最终答案]`
+   - `step_history` 仅存内存不入 SQL
+   - 解析失败时 `continue` 让 LLM 重试
+   - 达到 `max_steps` 时返回 fallback 消息
+
+4. **内部能力**
+   - `_find_tool()`：按名称查找工具
+   - `_build_tools_description()`：生成工具描述文本
+   - `_format_context()`：格式化对话历史
+   - `_parse_output()`：正则解析 Thought/Action
+   - `_map_action_input()`：智能参数映射（JSON → 单参数 → 兜底）
+   - `_dispatch_tool()`：工具调度执行
+
+**验证脚本：**
+
+```bash
+python scripts/smoke_test.py
+```
+
+---
 
 ### Step 6: 应用层 —— API 接口服务 ⏳
 

@@ -284,6 +284,7 @@ def test_domain_module():
     
     try:
         from domain import CustomerServiceAgent, AgentResponse
+        from domain.customer_service.prompts import build_prompt, SYSTEM_PROMPT
         print("[OK] 导入 domain 模块成功")
     except ImportError as e:
         print(f"[FAIL] 导入失败: {e}")
@@ -303,28 +304,125 @@ def test_domain_module():
         return False
     
     try:
+        prompt = build_prompt(
+            tools_desc="- search_faq(query: string): 检索FAQ",
+            context="[user]: 你好",
+            user_input="怎么重置WiFi",
+            history="",
+        )
+        print(f"[OK] build_prompt() 生成成功，长度: {len(prompt)}")
+    except Exception as e:
+        print(f"[FAIL] build_prompt() 失败: {e}")
+        return False
+    
+    try:
         from llm import chat_service
         from utils import ConversationManager
-        from tools import Tool, ToolParameter
-        
-        def dummy_func(query: str) -> str:
-            return query
-        
-        dummy_tool = Tool(
-            name="dummy",
-            description="dummy",
-            func=dummy_func,
-            parameters=[]
-        )
+        from tools import search_faq_tool
         
         agent = CustomerServiceAgent(
             llm=chat_service,
             conversation_manager=ConversationManager(),
-            tools=[dummy_tool]
+            tools=[search_faq_tool]
         )
-        print("[OK] CustomerServiceAgent 实例化成功（占位实现）")
+        print("[OK] CustomerServiceAgent 实例化成功")
+        print(f"     - tools: {[t.name for t in agent.tools]}")
     except Exception as e:
         print(f"[FAIL] CustomerServiceAgent 实例化失败: {e}")
+        return False
+    
+    return True
+
+
+def test_agent_e2e():
+    print("\n" + "=" * 60)
+    print("[测试] Agent 端到端测试（需要配置 LLM API 和数据库）")
+    print("=" * 60)
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    api_key = os.getenv("LLM_API_KEY", "")
+    if not api_key or api_key == "your_api_key_here":
+        print("[SKIP] 未配置 LLM_API_KEY，跳过 Agent 端到端测试")
+        return True
+    
+    db_url = os.getenv("CONVERSATION_DB_URL", "")
+    if not db_url or "user:password" in db_url:
+        print("[SKIP] 未配置 CONVERSATION_DB_URL，跳过 Agent 端到端测试")
+        return True
+    
+    try:
+        from llm import chat_service
+        from utils import ConversationManager
+        from tools import search_faq_tool
+        from domain import CustomerServiceAgent
+        
+        print("[INFO] 创建 Agent 实例...")
+        conv_manager = ConversationManager(db_url=db_url, max_context_turns=3)
+        agent = CustomerServiceAgent(
+            llm=chat_service,
+            conversation_manager=conv_manager,
+            tools=[search_faq_tool],
+            max_steps=3,
+        )
+        print("[OK] Agent 实例创建成功")
+    except Exception as e:
+        print(f"[FAIL] Agent 实例创建失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 创建测试会话...")
+        conv_id = conv_manager.create(user_id="test_e2e")
+        print(f"[OK] 会话创建成功: {conv_id}")
+    except Exception as e:
+        print(f"[FAIL] 会话创建失败: {e}")
+        return False
+    
+    try:
+        print("\n" + "#" * 60)
+        print("# 开始运行 Agent（verbose 模式）")
+        print("#" * 60)
+        print("[用户输入] 怎么重置WiFi？")
+        
+        response = agent.run("怎么重置WiFi？", conv_id, verbose=True)
+        
+        print("\n" + "#" * 60)
+        print("# Agent 执行完成")
+        print("#" * 60)
+        print(f"\n[最终结果]")
+        print(f"  - type: {response.type}")
+        print(f"  - content: {response.content}")
+        print(f"  - conversation_id: {response.conversation_id}")
+        
+        if response.metadata:
+            print(f"\n[执行统计]")
+            print(f"  - total_steps: {response.metadata.get('total_steps', 'N/A')}")
+            step_history = response.metadata.get("step_history", [])
+            print(f"  - step_history: {len(step_history)} 步")
+            for i, step in enumerate(step_history):
+                print(f"\n  [Step {i+1}]")
+                thought = step.get("thought", "")[:80]
+                action = step.get("action", "")
+                observation = step.get("observation", "")[:100]
+                print(f"    Thought: {thought}...")
+                print(f"    Action: {action}")
+                print(f"    Observation: {observation}...")
+    except Exception as e:
+        print(f"[FAIL] Agent 运行失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    
+    try:
+        print("\n[INFO] 验证消息持久化...")
+        history = conv_manager.get_history(conv_id)
+        print(f"[OK] 会话历史共 {len(history)} 条消息")
+        for msg in history:
+            content_preview = msg['content'][:50] + "..." if len(msg['content']) > 50 else msg['content']
+            print(f"     - [{msg['role']}]: {content_preview}")
+    except Exception as e:
+        print(f"[FAIL] 验证消息持久化失败: {e}")
         return False
     
     return True
@@ -368,6 +466,7 @@ def main():
     results.append(("FAQ 检索工具", test_faq_search_tool()))
     results.append(("会话管理模块", test_conversation_module()))
     results.append(("Domain 模块", test_domain_module()))
+    results.append(("Agent 端到端测试", test_agent_e2e()))
     results.append(("LLM 聊天功能", test_llm_chat()))
     
     print("\n" + "=" * 60)
