@@ -474,32 +474,33 @@ def test_api_module():
     try:
         from fastapi.testclient import TestClient
         
-        client = TestClient(app)
-        print("[OK] TestClient 创建成功")
+        print("[OK] TestClient 导入成功")
     except Exception as e:
-        print(f"[FAIL] TestClient 创建失败: {e}")
+        print(f"[FAIL] TestClient 导入失败: {e}")
         return False
     
     try:
         print("[INFO] 测试 GET /health...")
-        response = client.get("/health")
-        if response.status_code == 200:
-            print(f"[OK] /health 返回: {response.json()}")
-        else:
-            print(f"[FAIL] /health 状态码: {response.status_code}")
-            return False
+        with TestClient(app) as client:
+            response = client.get("/health")
+            if response.status_code == 200:
+                print(f"[OK] /health 返回: {response.json()}")
+            else:
+                print(f"[FAIL] /health 状态码: {response.status_code}")
+                return False
     except Exception as e:
         print(f"[FAIL] /health 测试失败: {e}")
         return False
     
     try:
         print("[INFO] 测试 GET /...")
-        response = client.get("/")
-        if response.status_code == 200:
-            print(f"[OK] / 返回: {response.json()}")
-        else:
-            print(f"[FAIL] / 状态码: {response.status_code}")
-            return False
+        with TestClient(app) as client:
+            response = client.get("/")
+            if response.status_code == 200:
+                print(f"[OK] / 返回: {response.json()}")
+            else:
+                print(f"[FAIL] / 状态码: {response.status_code}")
+                return False
     except Exception as e:
         print(f"[FAIL] / 测试失败: {e}")
         return False
@@ -529,74 +530,66 @@ def test_api_e2e():
         from main import app
         from fastapi.testclient import TestClient
         
-        client = TestClient(app)
-        print("[OK] TestClient 创建成功")
+        print("[OK] TestClient 导入成功")
     except Exception as e:
-        print(f"[FAIL] TestClient 创建失败: {e}")
+        print(f"[FAIL] TestClient 导入失败: {e}")
         return False
     
-    try:
-        print("\n[INFO] 测试 POST /api/conversations（创建会话）...")
-        response = client.post("/api/conversations", json={"user_id": "test_api_user"})
-        if response.status_code == 200:
-            data = response.json()
-            conversation_id = data["conversation_id"]
-            print(f"[OK] 创建会话成功: {conversation_id}")
-        else:
-            print(f"[FAIL] 创建会话失败: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print(f"[FAIL] 创建会话测试失败: {e}")
-        return False
+    conversation_id = None
     
     try:
-        print("\n[INFO] 测试 POST /api/chat（发送消息）...")
-        print("[用户输入] 怎么重置WiFi？")
-        response = client.post("/api/chat", json={
-            "conversation_id": conversation_id,
-            "message": "怎么重置WiFi？"
-        })
-        if response.status_code == 200:
-            data = response.json()
-            print(f"[OK] Chat 返回成功")
-            print(f"     - type: {data['type']}")
-            print(f"     - content: {data['content'][:200]}..." if len(data['content']) > 200 else f"     - content: {data['content']}")
-            print(f"     - conversation_id: {data['conversation_id']}")
-        else:
-            print(f"[FAIL] Chat 失败: {response.status_code} - {response.text}")
-            return False
+        with TestClient(app) as client:
+            print("\n[INFO] 测试 POST /api/conversations（创建会话）...")
+            response = client.post("/api/conversations", json={"user_id": "test_api_user"})
+            if response.status_code == 200:
+                data = response.json()
+                conversation_id = data["conversation_id"]
+                print(f"[OK] 创建会话成功: {conversation_id}")
+            else:
+                print(f"[FAIL] 创建会话失败: {response.status_code} - {response.text}")
+                return False
+            
+            print("\n[INFO] 测试 POST /api/chat（发送消息）...")
+            print("[用户输入] 怎么重置WiFi？")
+            response = client.post("/api/chat", json={
+                "conversation_id": conversation_id,
+                "message": "怎么重置WiFi？"
+            })
+            if response.status_code == 200:
+                data = response.json()
+                print(f"[OK] Chat 返回成功")
+                print(f"     - type: {data['type']}")
+                print(f"     - content: {data['content'][:200]}..." if len(data['content']) > 200 else f"     - content: {data['content']}")
+                print(f"     - conversation_id: {data['conversation_id']}")
+            else:
+                print(f"[FAIL] Chat 失败: {response.status_code} - {response.text}")
+                return False
+            
+            print("\n[INFO] 测试 GET /api/conversations/{id}（获取会话详情）...")
+            response = client.get(f"/api/conversations/{conversation_id}")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"[OK] 获取会话成功")
+                print(f"     - conversation_id: {data['conversation_id']}")
+                print(f"     - status: {data['status']}")
+                print(f"     - messages count: {len(data['messages'])}")
+            else:
+                print(f"[FAIL] 获取会话失败: {response.status_code} - {response.text}")
+                return False
+            
+            print("\n[INFO] 测试 GET /api/conversations（列出用户会话）...")
+            response = client.get("/api/conversations?user_id=test_api_user")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"[OK] 列出会话成功")
+                print(f"     - total: {data['total']}")
+            else:
+                print(f"[FAIL] 列出会话失败: {response.status_code} - {response.text}")
+                return False
     except Exception as e:
-        print(f"[FAIL] Chat 测试失败: {e}")
-        return False
-    
-    try:
-        print("\n[INFO] 测试 GET /api/conversations/{id}（获取会话详情）...")
-        response = client.get(f"/api/conversations/{conversation_id}")
-        if response.status_code == 200:
-            data = response.json()
-            print(f"[OK] 获取会话成功")
-            print(f"     - conversation_id: {data['conversation_id']}")
-            print(f"     - status: {data['status']}")
-            print(f"     - messages count: {len(data['messages'])}")
-        else:
-            print(f"[FAIL] 获取会话失败: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print(f"[FAIL] 获取会话测试失败: {e}")
-        return False
-    
-    try:
-        print("\n[INFO] 测试 GET /api/conversations（列出用户会话）...")
-        response = client.get("/api/conversations?user_id=test_api_user")
-        if response.status_code == 200:
-            data = response.json()
-            print(f"[OK] 列出会话成功")
-            print(f"     - total: {data['total']}")
-        else:
-            print(f"[FAIL] 列出会话失败: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        print(f"[FAIL] 列出会话测试失败: {e}")
+        print(f"[FAIL] API 端到端测试失败: {e}")
+        import traceback
+        traceback.print_exc()
         return False
     
     return True
