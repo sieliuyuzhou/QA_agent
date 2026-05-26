@@ -7,7 +7,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 0 Task 6 已完成，准备执行 Task 7：测试模式与 Phase 0 验收 |
+| 当前执行阶段 | Phase 0 工程基线已验收完成，待进入 Phase 1 内部试用 MVP |
 
 ## 1. 使用规则
 
@@ -45,7 +45,7 @@
 | 里程碑 | 目标 | 状态 | 完成判定 |
 | --- | --- | --- | --- |
 | `M0` 方案与任务基线 | 明确总体方案和 worklist | `DONE` | 两份文档完成并自检通过 |
-| `M1` Phase 0 工程基线 | 现有原型稳定、能力声明真实 | `PENDING` | 配置/测试/AskUser/引用/健康检查基线通过 |
+| `M1` Phase 0 工程基线 | 现有原型稳定、能力声明真实 | `DONE` | 配置/测试/AskUser/引用/健康检查基线通过 |
 | `M2` Phase 1 内部试用 MVP | 模拟售后闭环可用 | `PENDING` | 咨询、排障、办理、确认、转人工、审计验收通过 |
 | `M3` Phase 2 多智能体 | 领域子 Agent 协同运行 | `PENDING` | Supervisor 与两个子 Agent 通过回归评测 |
 | `M4` Phase 3 企业化 | 真实系统接入与治理 | `DEFERRED` | 企业发布门禁另行批准 |
@@ -90,9 +90,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | `P0-012` | `P0` | 建立不调用真实模型的 Agent 控制流单元测试 | `P0-007`, `P0-008` | `DONE` | 覆盖检索回答、反问、解析失败、兜底行为 | 当前覆盖 system prompt、反问、人工转接；降级分支随 `P0-010` 补齐 |
 | `P0-013` | `P0` | 建立引用和无依据降级测试 | `P0-009`, `P0-010` | `DONE` | 引用正确返回，低依据请求进入规定状态 | 覆盖引用透传、空检索转人工和澄清状态 |
-| `P0-014` | `P1` | 区分离线测试、数据库集成测试和外部 API 冒烟测试 | `P0-012` | `PENDING` | 默认测试不会消耗外部 API，冒烟测试显式执行 | 保护成本和数据 |
+| `P0-014` | `P1` | 区分离线测试、数据库集成测试和外部 API 冒烟测试 | `P0-012` | `DONE` | 默认测试不会消耗外部 API，冒烟测试显式执行 | `RUN_EXTERNAL_SMOKE=true` 才运行外部/持久化 smoke 路径 |
 | `P0-015` | `P1` | 完善健康检查和启动失败可见性 | `P0-003`, `P0-006` | `DONE` | 数据库/向量依赖异常能反映为非健康或启动错误 | `/health` 返回数据库和本地知识库检查状态 |
-| `P0-016` | `P1` | Phase 0 回归验证和文档更新 | `P0-001` 至 `P0-015` | `PENDING` | 新环境启动验证、测试通过、README 与能力一致 | `M1` 验收任务 |
+| `P0-016` | `P1` | Phase 0 回归验证和文档更新 | `P0-001` 至 `P0-015` | `DONE` | 新环境启动验证、测试通过、README 与能力一致 | `M1` 已依据离线回归、bootstrap 和健康检查证据关闭 |
 
 ## 5. Phase 1：内部试用客服 MVP
 
@@ -191,10 +191,11 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P0-010`, `P0-011`, `P0-013` | `pytest tests/test_agent_actions.py tests/test_agent_citations.py -q` 通过（7 passed） | 空来源检索后禁止猜测回答；状态暂以消息元数据持久化 | 纳入 FAQ 导入脚本并保留来源元数据 |
 | 2026-05-26 | `P0-002` | `pytest tests/test_faq_import.py tests/test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（6 passed） | FAQ 导入现保存文档来源；实时重建索引会调用嵌入服务，未在离线验证中执行 | 完善数据库初始化与健康检查 |
 | 2026-05-26 | `P0-006`, `P0-015` | `pytest tests -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`python scripts\init_db.py` 成功；真实 `/health` 返回两个依赖均为 `ok` | 启动不再静默建表；schema 初始化改为显式 bootstrap | 区分测试模式并完成 Phase 0 验收 |
+| 2026-05-26 | `P0-014`, `P0-016`, `M1` | `pytest -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`scripts\verify_migration.py` 成功；默认 `scripts\smoke_test.py` 在未开启门禁时跳过外部/持久化路径；`git diff --check` 通过 | 外部冒烟改为 `RUN_EXTERNAL_SMOKE=true` 显式选择；保留一条第三方弃用告警待后续依赖升级处理 | 准备 Phase 1 内部试用 MVP 详细实施计划 |
 
 ## 10. 当前待办焦点
 
 当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
 
-1. 实现 `P0-009` 与 `P0-013`：FAQ 引用结构与离线验证。
-2. 实现 `P0-010` 与 `P0-011`：无依据降级与会话状态。
+1. 编写 Phase 1 内部试用 MVP 的详细实施计划，拆解模拟用户、订单、售后工单、工具和审计任务。
+2. 在 Phase 1 业务数据模型确定前，不提前引入 Supervisor/子 Agent 编排或真实企业系统集成。

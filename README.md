@@ -137,7 +137,8 @@ guide.md（基础 RAG 服务）
 # 1. 目录结构和 import 路径验证
 python scripts/verify_migration.py
 
-# 2. 功能冒烟测试
+# 2. 外部/持久化冒烟测试（显式选择后运行）
+$env:RUN_EXTERNAL_SMOKE="true"
 python scripts/smoke_test.py
 ```
 
@@ -165,9 +166,10 @@ python scripts/smoke_test.py
    - Tool 是薄封装层，不包含业务逻辑
    - 新增工具只需新建文件（函数 + Tool 对象）后追加到 Agent 的 tools 列表
 
-**验证脚本：**
+**外部冒烟验证（显式选择后运行）：**
 
-```bash
+```powershell
+$env:RUN_EXTERNAL_SMOKE="true"
 python scripts/smoke_test.py
 ```
 
@@ -214,9 +216,10 @@ CONVERSATION_DB_URL=postgresql://user:1234@localhost:5433/agent
 
 应用启动不会自动创建数据表，也不会忽略 schema 初始化失败；新环境应先显式执行上述 bootstrap 命令。
 
-**验证脚本：**
+**外部冒烟验证（显式选择后运行）：**
 
-```bash
+```powershell
+$env:RUN_EXTERNAL_SMOKE="true"
 python scripts/smoke_test.py
 ```
 
@@ -286,9 +289,10 @@ response = chat_service.chat("你好")
    - `_map_action_input()`：智能参数映射（JSON → 单参数 → 兜底）
    - `_dispatch_tool()`：工具调度执行
 
-**验证脚本：**
+**外部冒烟验证（显式选择后运行）：**
 
-```bash
+```powershell
+$env:RUN_EXTERNAL_SMOKE="true"
 python scripts/smoke_test.py
 ```
 
@@ -330,9 +334,10 @@ python scripts/smoke_test.py
    - Swagger UI: http://localhost:8000/docs
    - ReDoc: http://localhost:8000/redoc
 
-**验证脚本：**
+**外部冒烟验证（显式选择后运行）：**
 
-```bash
+```powershell
+$env:RUN_EXTERNAL_SMOKE="true"
 python scripts/smoke_test.py
 ```
 
@@ -368,8 +373,16 @@ python scripts/import_faq.py
 
 ### 5. 验证安装
 
-```bash
-python scripts/smoke_test.py
+```powershell
+# 离线回归测试：不调用已配置的 LLM 或 Embedding 接口
+.\.venv\Scripts\python.exe -m pytest -q
+
+# 模块与 import 迁移验证
+.\.venv\Scripts\python.exe scripts\verify_migration.py
+
+# 显式外部冒烟测试：可能写入本地数据并发生 API 调用
+$env:RUN_EXTERNAL_SMOKE="true"
+.\.venv\Scripts\python.exe scripts\smoke_test.py
 ```
 
 ## 依赖方向

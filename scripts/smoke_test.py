@@ -4,6 +4,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+RUN_EXTERNAL_SMOKE = os.getenv("RUN_EXTERNAL_SMOKE", "").lower() == "true"
+
+
+def external_smoke_enabled() -> bool:
+    if not RUN_EXTERNAL_SMOKE:
+        print("[SKIP] RUN_EXTERNAL_SMOKE is not true; skipping external/persistent smoke test")
+        return False
+    return True
+
 
 def test_llm_module():
     print("\n" + "=" * 60)
@@ -46,6 +55,9 @@ def test_rag_module():
     print("\n" + "=" * 60)
     print("[测试] RAG 模块 (infrastructure.rag)")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     try:
         from infrastructure.rag import get_store, VectorStore
@@ -141,6 +153,9 @@ def test_faq_search_tool():
     print("\n" + "=" * 60)
     print("[测试] FAQ 检索工具")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     try:
         from tools import search_faq, search_faq_tool
@@ -175,7 +190,7 @@ def test_faq_search_tool():
         print("[INFO] 测试 search_faq_tool.run()...")
         result = search_faq_tool.run({"query": "电池"})
         print(f"[OK] search_faq_tool.run() 返回成功")
-        print(f"     结果预览: {result[:100]}...")
+        print(f"     结果预览: {result.content[:100]}...")
     except Exception as e:
         print(f"[FAIL] search_faq_tool.run() 执行失败: {e}")
         return False
@@ -194,6 +209,9 @@ def test_conversation_module():
     print("\n" + "=" * 60)
     print("[测试] 会话管理模块")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     from dotenv import load_dotenv
     load_dotenv()
@@ -338,6 +356,9 @@ def test_agent_e2e():
     print("\n" + "=" * 60)
     print("[测试] Agent 端到端测试（需要配置 LLM API 和数据库）")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     from dotenv import load_dotenv
     load_dotenv()
@@ -432,6 +453,9 @@ def test_llm_chat():
     print("\n" + "=" * 60)
     print("[测试] LLM 聊天功能（需要配置 API）")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     from dotenv import load_dotenv
     load_dotenv()
@@ -457,6 +481,9 @@ def test_api_module():
     print("\n" + "=" * 60)
     print("[测试] API 模块")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     try:
         from main import app
@@ -512,6 +539,9 @@ def test_api_e2e():
     print("\n" + "=" * 60)
     print("[测试] API 端到端测试（需要配置 LLM API 和数据库）")
     print("=" * 60)
+
+    if not external_smoke_enabled():
+        return True
     
     from dotenv import load_dotenv
     load_dotenv()
