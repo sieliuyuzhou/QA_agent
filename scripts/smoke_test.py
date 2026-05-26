@@ -190,23 +190,88 @@ def test_faq_search_tool():
     return True
 
 
-def test_utils_module():
+def test_conversation_module():
     print("\n" + "=" * 60)
-    print("[测试] Utils 模块")
+    print("[测试] 会话管理模块")
     print("=" * 60)
+    
+    from dotenv import load_dotenv
+    load_dotenv()
     
     try:
         from utils import ConversationManager
-        print("[OK] 导入 utils 模块成功")
+        from infrastructure.database import DatabaseManager
+        from infrastructure.models import init_tables
+        print("[OK] 导入会话管理模块成功")
     except ImportError as e:
         print(f"[FAIL] 导入失败: {e}")
         return False
     
+    db_url = os.getenv("CONVERSATION_DB_URL", "")
+    if not db_url or "user:password" in db_url:
+        print("[SKIP] 未配置 CONVERSATION_DB_URL，跳过数据库测试")
+        print("       请在 .env 中配置有效的 PostgreSQL 连接字符串")
+        return True
+    
     try:
-        manager = ConversationManager()
-        print("[OK] ConversationManager 实例化成功（占位实现）")
+        print("[INFO] 测试数据库连接...")
+        db = DatabaseManager(db_url=db_url)
+        init_tables(db)
+        print("[OK] 数据库连接成功，表已创建")
+    except Exception as e:
+        print(f"[FAIL] 数据库连接失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试 ConversationManager...")
+        manager = ConversationManager(db_url=db_url, max_context_turns=3)
+        print("[OK] ConversationManager 实例化成功")
     except Exception as e:
         print(f"[FAIL] ConversationManager 实例化失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试创建会话...")
+        conv_id = manager.create(user_id="test_user")
+        print(f"[OK] 创建会话成功: {conv_id}")
+    except Exception as e:
+        print(f"[FAIL] 创建会话失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试添加消息...")
+        msg_id_1 = manager.add_message(conv_id, "user", "你好，我想咨询退货问题")
+        msg_id_2 = manager.add_message(conv_id, "assistant", "好的，请问您是退货还是退款？")
+        msg_id_3 = manager.add_message(conv_id, "user", "退货退款")
+        print(f"[OK] 添加消息成功，消息ID: {msg_id_1}, {msg_id_2}, {msg_id_3}")
+    except Exception as e:
+        print(f"[FAIL] 添加消息失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试获取上下文...")
+        context = manager.get_context(conv_id)
+        print(f"[OK] 获取上下文成功，共 {len(context)} 条消息")
+        for msg in context:
+            print(f"     - turn {msg['turn_number']}: [{msg['role']}] {msg['content'][:30]}...")
+    except Exception as e:
+        print(f"[FAIL] 获取上下文失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试获取完整历史...")
+        history = manager.get_history(conv_id)
+        print(f"[OK] 获取完整历史成功，共 {len(history)} 条消息")
+    except Exception as e:
+        print(f"[FAIL] 获取完整历史失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试关闭会话...")
+        manager.close(conv_id)
+        print("[OK] 关闭会话成功")
+    except Exception as e:
+        print(f"[FAIL] 关闭会话失败: {e}")
         return False
     
     return True
@@ -301,7 +366,7 @@ def main():
     results.append(("RAG 模块", test_rag_module()))
     results.append(("Tools 模块", test_tools_module()))
     results.append(("FAQ 检索工具", test_faq_search_tool()))
-    results.append(("Utils 模块", test_utils_module()))
+    results.append(("会话管理模块", test_conversation_module()))
     results.append(("Domain 模块", test_domain_module()))
     results.append(("LLM 聊天功能", test_llm_chat()))
     
