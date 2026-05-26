@@ -25,7 +25,10 @@ def test_ask_user_stops_loop_and_persists_visible_question():
 
     assert response.type == "ask_user"
     assert response.content == "请提供门锁型号。"
-    assert manager.messages[-1]["metadata"] == {"action_type": "ask_user"}
+    assert manager.messages[-1]["metadata"] == {
+        "action_type": "ask_user",
+        "conversation_state": "awaiting_clarification",
+    }
 
 
 def test_handoff_stops_loop_and_returns_user_visible_reason():
@@ -34,4 +37,7 @@ def test_handoff_stops_loop_and_returns_user_visible_reason():
     response = agent.run("我要人工", "conv-1")
 
     assert response.type == "handoff"
-    assert manager.messages[-1]["metadata"] == {"action_type": "handoff"}
+    assert manager.messages[-1]["metadata"] == {
+        "action_type": "handoff",
+        "conversation_state": "handoff_requested",
+    }

@@ -148,6 +148,7 @@ class CustomerServiceAgent:
         
         step_history = []
         citations = []
+        knowledge_lookup_without_sources = False
         
         for step in range(self.max_steps):
             history_str = self._format_step_history(step_history)
@@ -207,11 +208,26 @@ class CustomerServiceAgent:
             if action_name in terminal_actions:
                 response_type = terminal_actions[action_name]
                 final_answer = action_input
+                if (
+                    action_name == "Finish"
+                    and knowledge_lookup_without_sources
+                    and not citations
+                ):
+                    response_type = "handoff"
+                    final_answer = "当前没有找到可靠知识依据，已为您转接人工进一步确认。"
+                states = {
+                    "final_answer": "active",
+                    "ask_user": "awaiting_clarification",
+                    "handoff": "handoff_requested",
+                }
                 self.conversation_manager.add_message(
                     conversation_id,
                     "assistant",
                     final_answer,
-                    metadata={"action_type": response_type},
+                    metadata={
+                        "action_type": response_type,
+                        "conversation_state": states[response_type],
+                    },
                 )
                 if verbose:
                     print(f"\n[{action_name}] 返回内容: {final_answer[:200]}..." if len(final_answer) > 200 else f"\n[{action_name}] 返回内容: {final_answer}")
@@ -230,6 +246,8 @@ class CustomerServiceAgent:
             if isinstance(tool_result, ToolResult):
                 observation = tool_result.content
                 citations.extend(tool_result.citations)
+                if action_name == "search_faq" and not tool_result.citations:
+                    knowledge_lookup_without_sources = True
             else:
                 observation = tool_result
             
@@ -248,7 +266,10 @@ class CustomerServiceAgent:
             conversation_id,
             "assistant",
             fallback_message,
-            metadata={"action_type": "final_answer"},
+            metadata={
+                "action_type": "final_answer",
+                "conversation_state": "active",
+            },
         )
         return AgentResponse(
             type="final_answer",
