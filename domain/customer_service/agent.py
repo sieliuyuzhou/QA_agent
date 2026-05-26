@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 
-from .prompts import build_prompt
+from .prompts import build_system_prompt, build_user_prompt
 
 
 @dataclass
@@ -148,9 +148,8 @@ class CustomerServiceAgent:
         
         for step in range(self.max_steps):
             history_str = self._format_step_history(step_history)
-            
-            prompt = build_prompt(
-                tools_desc=tools_desc,
+            system_prompt = self.system_prompt or build_system_prompt(tools_desc)
+            prompt = build_user_prompt(
                 context=context,
                 user_input=user_input,
                 history=history_str,
@@ -162,7 +161,7 @@ class CustomerServiceAgent:
                 print(f"{'='*50}")
             
             try:
-                output = self.llm.chat(prompt)
+                output = self.llm.chat(prompt, system_prompt=system_prompt)
                 if verbose:
                     print(f"\n[LLM 原始输出]:\n{output}")
             except Exception as e:
@@ -197,18 +196,27 @@ class CustomerServiceAgent:
             action_name = parsed["action_name"]
             action_input = parsed["action_input"]
             
-            if action_name == "Finish":
+            terminal_actions = {
+                "Finish": "final_answer",
+                "AskUser": "ask_user",
+                "Handoff": "handoff",
+            }
+            if action_name in terminal_actions:
+                response_type = terminal_actions[action_name]
                 final_answer = action_input
                 self.conversation_manager.add_message(
-                    conversation_id, "assistant", final_answer
+                    conversation_id,
+                    "assistant",
+                    final_answer,
+                    metadata={"action_type": response_type},
                 )
                 if verbose:
-                    print(f"\n[Finish] 最终答案: {final_answer[:200]}..." if len(final_answer) > 200 else f"\n[Finish] 最终答案: {final_answer}")
+                    print(f"\n[{action_name}] 返回内容: {final_answer[:200]}..." if len(final_answer) > 200 else f"\n[{action_name}] 返回内容: {final_answer}")
                 return AgentResponse(
-                    type="final_answer",
+                    type=response_type,
                     content=final_answer,
                     conversation_id=conversation_id,
-                    metadata={"step_history": step_history, "total_steps": step + 1},
+                    metadata={"total_steps": step + 1},
                 )
             
             if verbose:
@@ -228,11 +236,14 @@ class CustomerServiceAgent:
         
         fallback_message = "抱歉，我无法在有限的步骤内解决您的问题，请尝试更具体地描述您的需求。"
         self.conversation_manager.add_message(
-            conversation_id, "assistant", fallback_message
+            conversation_id,
+            "assistant",
+            fallback_message,
+            metadata={"action_type": "final_answer"},
         )
         return AgentResponse(
             type="final_answer",
             content=fallback_message,
             conversation_id=conversation_id,
-            metadata={"step_history": step_history, "total_steps": self.max_steps},
+            metadata={"total_steps": self.max_steps},
         )

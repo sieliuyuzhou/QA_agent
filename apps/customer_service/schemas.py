@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Literal, Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -35,7 +35,9 @@ class ChatResponse(BaseModel):
         }
     )
     
-    type: str = Field(..., description="响应类型：final_answer 或 ask_user")
+    type: Literal["final_answer", "ask_user", "handoff"] = Field(
+        ..., description="响应类型：最终回答、澄清问题或人工转接"
+    )
     content: str = Field(..., description="响应内容")
     conversation_id: str = Field(..., description="会话ID")
 
