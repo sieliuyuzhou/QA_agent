@@ -90,9 +90,33 @@ python scripts/smoke_test.py
 
 ---
 
-### Step 2: 工具层 —— Tool 基类与 FAQ 检索工具 ⏳
+### Step 2: 工具层 —— Tool 基类与 FAQ 检索工具 ✅
 
-待开发...
+**已完成工作：**
+
+1. **Tool 基类完善** (`tools/base.py`)
+   - `ToolParameter` 类：参数定义（name、type、description、required、default）
+   - `Tool` 类：工具封装（name、description、func、parameters）
+   - `run(params: dict) -> str`：Agent 唯一调用入口，支持必填参数校验和可选参数默认值
+   - `to_prompt_desc() -> str`：生成注入 prompt 的工具描述文本
+   - `to_openai_schema() -> dict`：转换为 OpenAI function calling 格式（预留）
+
+2. **FAQ 检索工具实现** (`tools/faq_search.py`)
+   - `search_faq(query, top_k=5) -> str`：纯函数，调用 VectorStore.search() 检索 FAQ
+   - `search_faq_tool`：Tool 对象，供 Agent 调度
+
+3. **设计原则**
+   - 函数和 Tool 对象分离：纯函数可被任何模块直接 import 调用
+   - Tool 是薄封装层，不包含业务逻辑
+   - 新增工具只需新建文件（函数 + Tool 对象）后追加到 Agent 的 tools 列表
+
+**验证脚本：**
+
+```bash
+python scripts/smoke_test.py
+```
+
+---
 
 ### Step 3: 会话管理模块 ⏳
 

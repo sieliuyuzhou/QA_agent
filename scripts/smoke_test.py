@@ -98,15 +98,16 @@ def test_tools_module():
         return False
     
     try:
-        def dummy_func(query: str) -> str:
-            return f"结果: {query}"
+        def dummy_func(query: str, count: int = 1) -> str:
+            return f"结果: {query} (count={count})"
         
         tool = Tool(
             name="test_tool",
             description="测试工具",
             func=dummy_func,
             parameters=[
-                ToolParameter(name="query", type="string", description="查询内容")
+                ToolParameter(name="query", type="string", description="查询内容"),
+                ToolParameter(name="count", type="integer", description="数量", required=False, default=1),
             ]
         )
         print("[OK] Tool 实例化成功")
@@ -114,10 +115,76 @@ def test_tools_module():
         result = tool.run({"query": "hello"})
         print(f"[OK] Tool.run() 执行成功: {result}")
         
+        result_with_optional = tool.run({"query": "world", "count": 3})
+        print(f"[OK] Tool.run() 可选参数测试: {result_with_optional}")
+        
         desc = tool.to_prompt_desc()
         print(f"[OK] Tool.to_prompt_desc(): {desc}")
+        
+        schema = tool.to_openai_schema()
+        print(f"[OK] Tool.to_openai_schema() 生成成功")
     except Exception as e:
         print(f"[FAIL] Tool 功能测试失败: {e}")
+        return False
+    
+    try:
+        tool.run({})
+        print(f"[FAIL] 缺少必填参数应抛出异常")
+        return False
+    except ValueError as e:
+        print(f"[OK] 缺少必填参数正确抛出异常: {e}")
+    
+    return True
+
+
+def test_faq_search_tool():
+    print("\n" + "=" * 60)
+    print("[测试] FAQ 检索工具")
+    print("=" * 60)
+    
+    try:
+        from tools import search_faq, search_faq_tool
+        print("[OK] 导入 search_faq 和 search_faq_tool 成功")
+    except ImportError as e:
+        print(f"[FAIL] 导入失败: {e}")
+        return False
+    
+    try:
+        from infrastructure.rag import get_store
+        store = get_store()
+        count = store.count()
+        
+        if count == 0:
+            print("[WARN] 数据库为空，跳过 FAQ 检索测试")
+            print("       请先运行 python scripts/import_faq.py 导入数据")
+            return True
+    except Exception as e:
+        print(f"[FAIL] 获取数据库状态失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试 search_faq() 函数...")
+        result = search_faq("WiFi", top_k=2)
+        print(f"[OK] search_faq() 返回成功")
+        print(f"     结果预览: {result[:100]}...")
+    except Exception as e:
+        print(f"[FAIL] search_faq() 执行失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试 search_faq_tool.run()...")
+        result = search_faq_tool.run({"query": "电池"})
+        print(f"[OK] search_faq_tool.run() 返回成功")
+        print(f"     结果预览: {result[:100]}...")
+    except Exception as e:
+        print(f"[FAIL] search_faq_tool.run() 执行失败: {e}")
+        return False
+    
+    try:
+        desc = search_faq_tool.to_prompt_desc()
+        print(f"[OK] search_faq_tool.to_prompt_desc(): {desc}")
+    except Exception as e:
+        print(f"[FAIL] to_prompt_desc() 失败: {e}")
         return False
     
     return True
@@ -233,6 +300,7 @@ def main():
     results.append(("LLM 模块", test_llm_module()))
     results.append(("RAG 模块", test_rag_module()))
     results.append(("Tools 模块", test_tools_module()))
+    results.append(("FAQ 检索工具", test_faq_search_tool()))
     results.append(("Utils 模块", test_utils_module()))
     results.append(("Domain 模块", test_domain_module()))
     results.append(("LLM 聊天功能", test_llm_chat()))
