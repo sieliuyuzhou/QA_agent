@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import chromadb
-from chromadb.config import Settings
 from dotenv import load_dotenv
 
 from .embedding import EmbeddingService
