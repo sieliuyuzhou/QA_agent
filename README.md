@@ -159,9 +159,40 @@ python scripts/smoke_test.py
 
 ---
 
-### Step 4: 模型层确认 ⏳
+### Step 4: 模型层确认 ✅
 
-待开发...
+**已完成工作：**
+
+本步骤确认 `llm/` 模块已在阶段一迁移完成，无需额外开发。
+
+1. **模块单例导出** (`llm/__init__.py`)
+   - `chat_service = ChatService()` 模块级单例
+   - 其他模块通过 `from llm import chat_service` 调用
+
+2. **核心方法签名**
+   ```python
+   def chat(
+       prompt: str,
+       system_prompt: Optional[str] = None,
+       history: Optional[List[Dict[str, str]]] = None,
+       temperature: float = 0.7,
+       max_tokens: Optional[int] = None,
+   ) -> str
+   ```
+
+3. **特性支持**
+   - 重试策略：网络超时和限流时指数退避重试
+   - 异常处理：分类处理 `ModelTimeoutError`、`ModelRateLimitError`、`ModelAuthenticationError` 等
+   - 流式输出：`chat_stream()` 方法（预留）
+
+**验证方式：**
+
+```python
+from llm import chat_service
+response = chat_service.chat("你好")
+```
+
+---
 
 ### Step 5: 领域层 —— ReAct Agent ⏳
 
