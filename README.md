@@ -1,13 +1,15 @@
-# QA_agent
+# QA-agent
 
 ## 项目概述
 
-基于 RAG 的智能客服 Agent 系统。当前代码支持 FAQ 检索回答、多轮会话持久化、通过 `AskUser` 主动澄清，以及通过 `Handoff` 返回人工转接提示。
+`QA-agent` 是基于 RAG 的智能客服 Agent 系统。当前代码支持 FAQ 检索回答、多轮会话持久化、通过 `AskUser` 主动澄清，以及通过 `Handoff` 返回人工转接提示。
+
+文档和产品展示名称统一使用 `QA-agent`。Python 模块、环境变量前缀及已有运行标识在需要时使用可执行的 `qa_agent` 形式。
 
 ## 目录结构
 
 ```
-test3/
+QA-agent/
 ├── llm/                    # 模型层：LLM API 调用封装
 │   ├── __init__.py
 │   ├── client.py           # ChatService 类

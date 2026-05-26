@@ -1,4 +1,4 @@
-# PostgreSQL 部署指南
+# QA-agent PostgreSQL 部署指南
 
 本文档介绍如何使用 Docker Desktop 部署 PostgreSQL 数据库，用于支持会话管理模块。
 
@@ -19,7 +19,7 @@
 
 ```powershell
 # 进入项目目录
-cd d:\code\py_project\PythonProject\test3
+cd E:\myProgram\QA_agent
 
 # 启动容器（后台运行）
 docker-compose up -d
@@ -28,7 +28,7 @@ docker-compose up -d
 预期输出：
 ```
 [+] Running 2/2
- ✔ Network test3_default        Created
+ ✔ Network qa_agent_default     Created
  ✔ Container qa_agent_pgsql     Started
 ```
 

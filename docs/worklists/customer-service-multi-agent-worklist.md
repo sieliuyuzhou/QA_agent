@@ -1,9 +1,10 @@
-# 智能客服 Agent 多智能体演进 Worklist
+# QA-agent 多智能体客服演进 Worklist
 
 | 项目 | 内容 |
 | --- | --- |
 | 台账状态 | 已初始化 |
 | 创建日期 | 2026-05-26 |
+| 项目展示名称 | `QA-agent` |
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
@@ -60,6 +61,8 @@
 | `DOC-004` | `P0` | 初始化持续维护的 worklist | `DOC-002` | `DONE` | 台账包含任务、状态、依赖、验收和更新机制 | 当前文件 |
 | `DOC-005` | `P0` | 用户审阅已落盘方案与 worklist | `DOC-003`, `DOC-004` | `DONE` | 用户确认文档无需修改或提出修订意见并处理完成 | 2026-05-26 用户指示开始实施 |
 | `DOC-006` | `P0` | 编写 Phase 0 详细实施计划 | `DOC-005` | `DONE` | 计划拆解到文件、测试和验证命令，并经用户确认 | `docs/superpowers/plans/2026-05-26-phase-0-engineering-baseline.md` |
+| `DOC-007` | `P0` | 统一项目展示名称为 `QA-agent` | `DOC-006` | `DONE` | README、方案和台账使用确认后的展示名称 | 技术路径/标识保留运行所需形式 |
+| `DOC-008` | `P0` | 编写 Phase 1 首批身份与订单读取设计规格 | `M1` | `REVIEW` | 范围、授权边界、数据/API 和测试契约明确 | 待用户审阅规格文档 |
 
 ## 4. Phase 0：工程基线与能力补齐
 
@@ -192,6 +195,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P0-002` | `pytest tests/test_faq_import.py tests/test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（6 passed） | FAQ 导入现保存文档来源；实时重建索引会调用嵌入服务，未在离线验证中执行 | 完善数据库初始化与健康检查 |
 | 2026-05-26 | `P0-006`, `P0-015` | `pytest tests -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`python scripts\init_db.py` 成功；真实 `/health` 返回两个依赖均为 `ok` | 启动不再静默建表；schema 初始化改为显式 bootstrap | 区分测试模式并完成 Phase 0 验收 |
 | 2026-05-26 | `P0-014`, `P0-016`, `M1` | `pytest -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`scripts\verify_migration.py` 成功；默认 `scripts\smoke_test.py` 在未开启门禁时跳过外部/持久化路径；`git diff --check` 通过 | 外部冒烟改为 `RUN_EXTERNAL_SMOKE=true` 显式选择；保留一条第三方弃用告警待后续依赖升级处理 | 准备 Phase 1 内部试用 MVP 详细实施计划 |
+| 2026-05-26 | `DOC-007`, `DOC-008`（待审阅） | 产品展示名称修正为 `QA-agent`；Phase 1 首批设计限定为身份上下文、会话授权和模拟订单只读查询 | Python/运行技术标识可使用 `qa_agent` 或 `qa-agent`；暂不实现写操作或多 Agent 编排 | 用户审阅 Phase 1 首批规格后编写实施计划 |
 
 ## 10. 当前待办焦点
 
