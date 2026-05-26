@@ -7,7 +7,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 0 Task 4 已完成，准备执行 Task 5：FAQ 导入可复现与来源保留 |
+| 当前执行阶段 | Phase 0 Task 5 已完成，准备执行 Task 6：显式数据库初始化与健康检查 |
 
 ## 1. 使用规则
 
@@ -68,7 +68,7 @@
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `P0-001` | `P0` | 补齐 `.gitignore`，隔离 `.env`、`.venv`、缓存和本地生成数据 | `DOC-006` | `DONE` | Git 状态不再暴露敏感/生成文件，必要源文件仍可追踪 | 不移除用户本地数据 |
-| `P0-002` | `P0` | 将必要的 FAQ 导入脚本纳入可复现基线并核对解析行为 | `DOC-006` | `PENDING` | 新环境能从 FAQ 原文重建索引且导入条数可验证 | 当前本地存在未跟踪脚本 |
+| `P0-002` | `P0` | 将必要的 FAQ 导入脚本纳入可复现基线并核对解析行为 | `DOC-006` | `DONE` | 新环境能从 FAQ 原文重建索引且导入条数可验证 | 导入脚本已纳入版本并保存文档来源；实际重建需显式调用嵌入服务 |
 | `P0-003` | `P0` | 统一 `.env.example` 与代码读取的配置名称 | `DOC-006` | `DONE` | Embedding、LLM、数据库配置名称一致并有测试/启动验证 | 已统一为 `EMBEDDING_MODEL` |
 | `P0-004` | `P1` | 统一 Docker 端口配置与运行文档 | `DOC-006` | `DONE` | README、部署文档与 compose 示例一致，端口冲突方案明确 | 使用宿主机端口 `5433` |
 | `P0-005` | `P1` | 决策一期向量存储路径：暂留 Chroma 或迁移 pgvector | `DOC-006` | `DONE` | 形成有验收条件的明确决策并同步方案/任务 | Phase 0/1 保留 Chroma |
@@ -189,6 +189,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P0-007`, `P0-008`, `P0-012` | 先验证旧行为存在 3 个预期失败；随后 `pytest tests/test_agent_actions.py -q` 通过（3 passed），兼容 prompt 构造检查通过 | 增加 `Handoff` 响应协议，规则通过 system prompt 传递 | 实现 FAQ 引用结构与 API 返回 |
 | 2026-05-26 | `P0-009`（`P0-013` 引用部分） | `pytest tests/test_agent_actions.py tests/test_agent_citations.py -q` 通过（5 passed）；未调用外部嵌入服务 | FAQ Tool 返回结构化来源，普通字符串接口保持兼容；无依据降级仍待实施 | 实施无依据回答降级和对话状态元数据 |
 | 2026-05-26 | `P0-010`, `P0-011`, `P0-013` | `pytest tests/test_agent_actions.py tests/test_agent_citations.py -q` 通过（7 passed） | 空来源检索后禁止猜测回答；状态暂以消息元数据持久化 | 纳入 FAQ 导入脚本并保留来源元数据 |
+| 2026-05-26 | `P0-002` | `pytest tests/test_faq_import.py tests/test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（6 passed） | FAQ 导入现保存文档来源；实时重建索引会调用嵌入服务，未在离线验证中执行 | 完善数据库初始化与健康检查 |
 
 ## 10. 当前待办焦点
 

@@ -92,6 +92,8 @@ class VectorStore:
                 "metadata": {
                     "question": question,
                     "answer": answer,
+                    "source_id": qa.get("source_id", f"qa_{i}"),
+                    "title": qa.get("title", "FAQ 知识库"),
                     "type": "qa",
                 },
             })
