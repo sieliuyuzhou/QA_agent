@@ -453,6 +453,155 @@ def test_llm_chat():
         return False
 
 
+def test_api_module():
+    print("\n" + "=" * 60)
+    print("[测试] API 模块")
+    print("=" * 60)
+    
+    try:
+        from main import app
+        from apps.customer_service import router
+        from apps.customer_service.schemas import (
+            ChatRequest, ChatResponse,
+            CreateConversationRequest, CreateConversationResponse,
+            ConversationDetail, ConversationListResponse,
+        )
+        print("[OK] 导入 API 模块成功")
+    except ImportError as e:
+        print(f"[FAIL] 导入失败: {e}")
+        return False
+    
+    try:
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        print("[OK] TestClient 创建成功")
+    except Exception as e:
+        print(f"[FAIL] TestClient 创建失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试 GET /health...")
+        response = client.get("/health")
+        if response.status_code == 200:
+            print(f"[OK] /health 返回: {response.json()}")
+        else:
+            print(f"[FAIL] /health 状态码: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] /health 测试失败: {e}")
+        return False
+    
+    try:
+        print("[INFO] 测试 GET /...")
+        response = client.get("/")
+        if response.status_code == 200:
+            print(f"[OK] / 返回: {response.json()}")
+        else:
+            print(f"[FAIL] / 状态码: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] / 测试失败: {e}")
+        return False
+    
+    return True
+
+
+def test_api_e2e():
+    print("\n" + "=" * 60)
+    print("[测试] API 端到端测试（需要配置 LLM API 和数据库）")
+    print("=" * 60)
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    api_key = os.getenv("LLM_API_KEY", "")
+    if not api_key or api_key == "your_api_key_here":
+        print("[SKIP] 未配置 LLM_API_KEY，跳过 API 端到端测试")
+        return True
+    
+    db_url = os.getenv("CONVERSATION_DB_URL", "")
+    if not db_url or "user:password" in db_url:
+        print("[SKIP] 未配置 CONVERSATION_DB_URL，跳过 API 端到端测试")
+        return True
+    
+    try:
+        from main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        print("[OK] TestClient 创建成功")
+    except Exception as e:
+        print(f"[FAIL] TestClient 创建失败: {e}")
+        return False
+    
+    try:
+        print("\n[INFO] 测试 POST /api/conversations（创建会话）...")
+        response = client.post("/api/conversations", json={"user_id": "test_api_user"})
+        if response.status_code == 200:
+            data = response.json()
+            conversation_id = data["conversation_id"]
+            print(f"[OK] 创建会话成功: {conversation_id}")
+        else:
+            print(f"[FAIL] 创建会话失败: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] 创建会话测试失败: {e}")
+        return False
+    
+    try:
+        print("\n[INFO] 测试 POST /api/chat（发送消息）...")
+        print("[用户输入] 怎么重置WiFi？")
+        response = client.post("/api/chat", json={
+            "conversation_id": conversation_id,
+            "message": "怎么重置WiFi？"
+        })
+        if response.status_code == 200:
+            data = response.json()
+            print(f"[OK] Chat 返回成功")
+            print(f"     - type: {data['type']}")
+            print(f"     - content: {data['content'][:200]}..." if len(data['content']) > 200 else f"     - content: {data['content']}")
+            print(f"     - conversation_id: {data['conversation_id']}")
+        else:
+            print(f"[FAIL] Chat 失败: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] Chat 测试失败: {e}")
+        return False
+    
+    try:
+        print("\n[INFO] 测试 GET /api/conversations/{id}（获取会话详情）...")
+        response = client.get(f"/api/conversations/{conversation_id}")
+        if response.status_code == 200:
+            data = response.json()
+            print(f"[OK] 获取会话成功")
+            print(f"     - conversation_id: {data['conversation_id']}")
+            print(f"     - status: {data['status']}")
+            print(f"     - messages count: {len(data['messages'])}")
+        else:
+            print(f"[FAIL] 获取会话失败: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] 获取会话测试失败: {e}")
+        return False
+    
+    try:
+        print("\n[INFO] 测试 GET /api/conversations（列出用户会话）...")
+        response = client.get("/api/conversations?user_id=test_api_user")
+        if response.status_code == 200:
+            data = response.json()
+            print(f"[OK] 列出会话成功")
+            print(f"     - total: {data['total']}")
+        else:
+            print(f"[FAIL] 列出会话失败: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"[FAIL] 列出会话测试失败: {e}")
+        return False
+    
+    return True
+
+
 def main():
     print("\n" + "#" * 60)
     print("# 功能冒烟测试脚本")
@@ -467,6 +616,8 @@ def main():
     results.append(("会话管理模块", test_conversation_module()))
     results.append(("Domain 模块", test_domain_module()))
     results.append(("Agent 端到端测试", test_agent_e2e()))
+    results.append(("API 模块", test_api_module()))
+    results.append(("API 端到端测试", test_api_e2e()))
     results.append(("LLM 聊天功能", test_llm_chat()))
     
     print("\n" + "=" * 60)
