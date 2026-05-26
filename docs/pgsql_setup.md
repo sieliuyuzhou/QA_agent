@@ -42,7 +42,7 @@ docker ps
 预期输出应包含：
 ```
 CONTAINER ID   IMAGE         COMMAND                  STATUS                   PORTS                    NAMES
-xxxxxxxxxxxx   postgres:15   "docker-entrypoint.s…"   Up X seconds (healthy)   0.0.0.0:5432->5432/tcp   qa_agent_pgsql
+xxxxxxxxxxxx   postgres:15   "docker-entrypoint.s…"   Up X seconds (healthy)   0.0.0.0:5433->5432/tcp   qa_agent_pgsql
 ```
 
 **关键检查点**：`STATUS` 列显示 `(healthy)` 表示 PostgreSQL 已就绪。
@@ -63,7 +63,7 @@ docker logs qa_agent_pgsql
 | 参数 | 值 |
 |------|-----|
 | 主机 | localhost |
-| 端口 | 5432 |
+| 端口 | 5433 |
 | 用户名 | user |
 | 密码 | 1234 |
 | 数据库名 | agent |
@@ -71,7 +71,7 @@ docker logs qa_agent_pgsql
 ### 2.2 连接字符串
 
 ```
-postgresql://user:1234@localhost:5432/agent
+postgresql://user:1234@localhost:5433/agent
 ```
 
 ### 2.3 .env 配置
@@ -79,7 +79,7 @@ postgresql://user:1234@localhost:5432/agent
 确认 `.env` 文件中已配置：
 
 ```env
-CONVERSATION_DB_URL=postgresql://user:1234@localhost:5432/agent
+CONVERSATION_DB_URL=postgresql://user:1234@localhost:5433/agent
 CONVERSATION_MAX_CONTEXT_TURNS=5
 ```
 
@@ -167,7 +167,7 @@ cat backup.sql | docker exec -i qa_agent_pgsql psql -U user agent
 
 ## 五、常见问题
 
-### Q1: 端口 5432 被占用
+### Q1: 端口 5433 被占用
 
 **错误信息**：
 ```
@@ -176,7 +176,7 @@ Error: port is already allocated
 
 **解决方案**：
 1. 检查是否有其他 PostgreSQL 实例运行
-2. 修改 `docker-compose.yml` 中的端口映射，如 `"5433:5432"`
+2. 修改 `docker-compose.yml` 中的端口映射，并同步选择新的宿主机端口，如 `"5434:5432"`
 3. 同步更新 `.env` 中的连接字符串
 
 ### Q2: 容器启动但状态不健康
@@ -195,7 +195,7 @@ docker-compose restart
 **检查清单**：
 1. Docker Desktop 是否运行
 2. 容器是否启动：`docker ps`
-3. 防火墙是否阻止 5432 端口
+3. 防火墙是否阻止 5433 端口
 4. `.env` 中的连接字符串是否正确
 
 ---

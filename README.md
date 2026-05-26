@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-基于 RAG 的智能客服 Agent 系统，支持多轮对话和主动反问能力。
+基于 RAG 的智能客服 Agent 系统。当前代码已支持 FAQ 检索回答和多轮会话持久化；主动反问能力正在 Phase 0 中补齐，不能视为已实现能力。
 
 ## 目录结构
 
@@ -203,7 +203,7 @@ python scripts/smoke_test.py
 
 ```bash
 # .env 中配置 PostgreSQL 连接
-CONVERSATION_DB_URL=postgresql://user:password@localhost:5432/qa_agent
+CONVERSATION_DB_URL=postgresql://user:1234@localhost:5433/agent
 ```
 
 **验证脚本：**

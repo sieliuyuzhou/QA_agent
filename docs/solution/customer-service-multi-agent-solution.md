@@ -397,7 +397,7 @@ flowchart TD
 
 - 关系型数据统一存 PostgreSQL。
 - 当前 FAQ 向量检索可暂留 Chroma，以减少一期变更面。
-- 在 Phase 0 决策并准备 `pgvector` 迁移方案；若团队优先考虑部署一致性，可在 Phase 1 开始前完成迁移。
+- Phase 0 决策（2026-05-26）：Phase 0 与 Phase 1 模拟业务 MVP 继续使用 Chroma 作为知识向量存储。待工作流和评测集稳定后，再独立评估迁移至 `pgvector`；存储迁移本身不能验证一期客服行为。
 
 ### 8.2 核心关系数据
 
