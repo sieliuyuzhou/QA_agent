@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
+from domain.customer_service.context import CurrentUser
+from .dependencies import get_current_user
 from .schemas import (
     ChatRequest,
     ChatResponse,
@@ -16,7 +18,11 @@ router = APIRouter(tags=["customer_service"])
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: Request, body: ChatRequest):
+async def chat(
+    request: Request,
+    body: ChatRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     agent = request.app.state.agent
     conversation_manager = request.app.state.conversation_manager
     
@@ -56,7 +62,11 @@ async def chat(request: Request, body: ChatRequest):
 
 
 @router.post("/conversations", response_model=CreateConversationResponse)
-async def create_conversation(request: Request, body: CreateConversationRequest):
+async def create_conversation(
+    request: Request,
+    body: CreateConversationRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     conversation_manager = request.app.state.conversation_manager
     
     try:
@@ -70,7 +80,11 @@ async def create_conversation(request: Request, body: CreateConversationRequest)
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetail)
-async def get_conversation(request: Request, conversation_id: str):
+async def get_conversation(
+    request: Request,
+    conversation_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     conversation_manager = request.app.state.conversation_manager
     
     conv = conversation_manager.get_conversation(conversation_id)
@@ -102,7 +116,11 @@ async def get_conversation(request: Request, conversation_id: str):
 
 
 @router.get("/conversations", response_model=ConversationListResponse)
-async def list_conversations(request: Request, user_id: str = None):
+async def list_conversations(
+    request: Request,
+    user_id: str = None,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     conversation_manager = request.app.state.conversation_manager
     
     if not user_id:

@@ -8,7 +8,7 @@ load_dotenv()
 
 from llm import chat_service
 from infrastructure.rag import get_store
-from utils import ConversationManager
+from utils import ConversationManager, CustomerRepository
 from tools import search_faq_tool
 from domain import CustomerServiceAgent
 from apps.customer_service.routes import router
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
     )
     
     app.state.conversation_manager = conversation_manager
+    app.state.customer_repository = CustomerRepository(conversation_manager.db)
     app.state.agent = agent
     
     yield

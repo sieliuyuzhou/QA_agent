@@ -103,6 +103,12 @@ WHERE user_id = %s AND status = 'active'
 ORDER BY updated_at DESC;
 """
 
+SELECT_ACTIVE_MOCK_CUSTOMER = """
+SELECT user_id, display_name, status
+FROM mock_customers
+WHERE user_id = %s AND status = 'active';
+"""
+
 UPDATE_CONVERSATION_TITLE = """
 UPDATE conversations SET title = %s, updated_at = NOW()
 WHERE conversation_id = %s;

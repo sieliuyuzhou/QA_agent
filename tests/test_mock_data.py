@@ -59,3 +59,38 @@ def test_seed_mock_data_uses_idempotent_inserts():
         + len(seed_module.PRODUCTS)
         + len(seed_module.ORDERS)
     )
+
+
+class RowDB:
+    def __init__(self, row):
+        self.row = row
+        self.calls = []
+
+    def execute_one(self, query, params=None, fetch=False):
+        self.calls.append((query, params, fetch))
+        return self.row
+
+
+def _load_mock_repository():
+    try:
+        module = importlib.import_module("utils.mock_data")
+    except ModuleNotFoundError:
+        pytest.fail("utils.mock_data must resolve internal test customers")
+    return module.CustomerRepository
+
+
+def test_customer_repository_returns_active_user_context():
+    repository_type = _load_mock_repository()
+    db = RowDB(("customer_alice", "Alice Test", "active"))
+
+    user = repository_type(db).find_active("customer_alice")
+
+    assert user.user_id == "customer_alice"
+    assert user.display_name == "Alice Test"
+    assert db.calls[0][1] == ("customer_alice",)
+
+
+def test_customer_repository_rejects_missing_user():
+    repository_type = _load_mock_repository()
+
+    assert repository_type(RowDB(None)).find_active("unknown") is None
