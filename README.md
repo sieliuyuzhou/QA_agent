@@ -118,9 +118,46 @@ python scripts/smoke_test.py
 
 ---
 
-### Step 3: 会话管理模块 ⏳
+### Step 3: 会话管理模块 ✅
 
-待开发...
+**已完成工作：**
+
+1. **数据库连接管理** (`infrastructure/database.py`)
+   - `DatabaseManager` 类：PostgreSQL 连接池管理
+   - 支持 `execute()` 和 `execute_one()` 方法
+   - 自动连接获取和归还
+
+2. **数据模型定义** (`infrastructure/models.py`)
+   - `conversations` 表：会话元数据（conversation_id、user_id、title、status）
+   - `messages` 表：消息明细（role、content、turn_number、metadata）
+   - `turn_number` 自动计算：user +1 开启新轮次，assistant 复用当前值
+
+3. **会话管理器** (`utils/conversation.py`)
+   - `create(user_id)` → conversation_id：创建会话
+   - `add_message(conversation_id, role, content, metadata)` → message_id：追加消息
+   - `get_context(conversation_id)` → 最近 N 轮消息：上下文截取
+   - `get_history(conversation_id)` → 完整历史
+   - `list_conversations(user_id)` → 用户会话列表
+   - `close(conversation_id)`：关闭会话
+
+4. **依赖更新**
+   - `requirements.txt`：添加 `psycopg2-binary`
+   - `.env.example`：添加 `CONVERSATION_DB_URL` 配置
+
+**数据库配置：**
+
+```bash
+# .env 中配置 PostgreSQL 连接
+CONVERSATION_DB_URL=postgresql://user:password@localhost:5432/qa_agent
+```
+
+**验证脚本：**
+
+```bash
+python scripts/smoke_test.py
+```
+
+---
 
 ### Step 4: 模型层确认 ⏳
 
