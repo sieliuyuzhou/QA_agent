@@ -231,9 +231,44 @@ python scripts/smoke_test.py
 
 ---
 
-### Step 6: 应用层 —— API 接口服务 ⏳
+### Step 6: 应用层 —— API 接口服务 ✅
 
-待开发...
+**已完成工作：**
+
+1. **FastAPI 入口** (`main.py`)
+   - `lifespan` 管理依赖生命周期（创建/销毁）
+   - 全局单例：`conversation_manager`、`agent`
+   - 路由挂载：`/api` 前缀
+
+2. **Pydantic 模型** (`apps/customer_service/schemas.py`)
+   - `ChatRequest` / `ChatResponse`
+   - `CreateConversationRequest` / `CreateConversationResponse`
+   - `ConversationDetail` / `ConversationListResponse`
+
+3. **API 路由** (`apps/customer_service/routes.py`)
+   - `POST /api/chat`：发送消息（自动创建会话）
+   - `POST /api/conversations`：创建会话
+   - `GET /api/conversations/{id}`：获取会话详情
+   - `GET /api/conversations?user_id=xxx`：列出用户会话
+
+4. **启动方式**
+   ```bash
+   # 开发模式
+   python main.py
+   
+   # 或使用 uvicorn
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+5. **API 文档**
+   - Swagger UI: http://localhost:8000/docs
+   - ReDoc: http://localhost:8000/redoc
+
+**验证脚本：**
+
+```bash
+python scripts/smoke_test.py
+```
 
 ---
 
