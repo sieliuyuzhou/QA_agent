@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 Task 4 已完成，准备执行 Task 5：本地验证 |
+| 当前执行阶段 | Phase 1 首批身份隔离与订单只读切片已验证，待设计售后规则与受控工具接入 |
 
 ## 1. 使用规则
 
@@ -202,10 +202,11 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P1-001` | `pytest tests\test_mock_data.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py -q --basetemp=.pytest_cache\tmp` 通过（11 passed） | `X-QA-User-Id` 仅解析已启用内部测试用户；不宣称生产认证能力 | 强制会话归属隔离 |
 | 2026-05-26 | `P1-002` | `pytest tests\test_identity_and_conversations.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（13 passed） | 会话创建和查询不再接受调用方选择用户；越权读取/续接统一返回 `404` | 建立授权订单只读 API 底座 |
 | 2026-05-26 | `P1-006`（底座部分） | `pytest tests\test_mock_data.py tests\test_orders_api.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（26 passed） | 已提供按当前身份过滤的订单 Service/API；不提前将订单查询注册为 Agent Tool | 执行本地 schema/seed 与完整回归验证 |
+| 2026-05-26 | Phase 1 首批切片验收 | `pytest -q --basetemp=.pytest_cache\tmp` 通过（28 passed）；`scripts\verify_migration.py` 通过；`scripts\init_db.py` 与 `scripts\seed_mock_data.py` 成功；本地 API 验证 Alice 仅可读取 `ORD-A-X1`/`ORD-A-C1` 且读取 `ORD-B-X2` 返回 `404` | `P1-001`、`P1-002`、`P1-003` 已关闭；`P1-006` 待受控 `MockOrderTool` 接入 | 设计并实施售后资格规则与订单工具接入 |
 
 ## 10. 当前待办焦点
 
 当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
 
-1. 编写 Phase 1 内部试用 MVP 的详细实施计划，拆解模拟用户、订单、售后工单、工具和审计任务。
-2. 在 Phase 1 业务数据模型确定前，不提前引入 Supervisor/子 Agent 编排或真实企业系统集成。
+1. 为 `P1-007`、`P1-008` 与 `P1-006` 编写下一切片设计：政策分类、确定性售后资格规则与受控订单工具接入。
+2. 在售后规则和工具协议通过验收前，不引入工单写操作、Supervisor/子 Agent 编排或真实企业系统集成。
