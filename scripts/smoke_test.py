@@ -566,11 +566,12 @@ def test_api_e2e():
         return False
     
     conversation_id = None
+    headers = {"X-QA-User-Id": "customer_alice"}
     
     try:
         with TestClient(app) as client:
             print("\n[INFO] 测试 POST /api/conversations（创建会话）...")
-            response = client.post("/api/conversations", json={"user_id": "test_api_user"})
+            response = client.post("/api/conversations", headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 conversation_id = data["conversation_id"]
@@ -581,7 +582,7 @@ def test_api_e2e():
             
             print("\n[INFO] 测试 POST /api/chat（发送消息）...")
             print("[用户输入] 怎么重置WiFi？")
-            response = client.post("/api/chat", json={
+            response = client.post("/api/chat", headers=headers, json={
                 "conversation_id": conversation_id,
                 "message": "怎么重置WiFi？"
             })
@@ -596,7 +597,7 @@ def test_api_e2e():
                 return False
             
             print("\n[INFO] 测试 GET /api/conversations/{id}（获取会话详情）...")
-            response = client.get(f"/api/conversations/{conversation_id}")
+            response = client.get(f"/api/conversations/{conversation_id}", headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 print(f"[OK] 获取会话成功")
@@ -608,7 +609,7 @@ def test_api_e2e():
                 return False
             
             print("\n[INFO] 测试 GET /api/conversations（列出用户会话）...")
-            response = client.get("/api/conversations?user_id=test_api_user")
+            response = client.get("/api/conversations", headers=headers)
             if response.status_code == 200:
                 data = response.json()
                 print(f"[OK] 列出会话成功")
