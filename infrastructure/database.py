@@ -81,6 +81,10 @@ class DatabaseManager:
             if conn:
                 self.return_connection(conn)
 
+    def ping(self) -> bool:
+        result = self.execute_one("SELECT 1;", fetch=True)
+        return bool(result and result[0] == 1)
+
     def close_all(self):
         if self._pool:
             self._pool.closeall()

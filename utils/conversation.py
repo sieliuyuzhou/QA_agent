@@ -23,16 +23,12 @@ class ConversationManager:
         self,
         db_url: Optional[str] = None,
         max_context_turns: int = 5,
+        initialize_schema: bool = False,
     ):
         self.db = DatabaseManager(db_url=db_url)
         self.max_context_turns = max_context_turns
-        self._init_tables()
-
-    def _init_tables(self):
-        try:
+        if initialize_schema:
             init_tables(self.db)
-        except Exception:
-            pass
 
     def create(self, user_id: str) -> str:
         conversation_id = str(uuid.uuid4())

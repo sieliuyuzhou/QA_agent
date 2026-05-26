@@ -83,11 +83,21 @@ CONVERSATION_DB_URL=postgresql://user:1234@localhost:5433/agent
 CONVERSATION_MAX_CONTEXT_TURNS=5
 ```
 
+### 2.4 显式初始化 Schema
+
+容器健康并配置连接字符串后，在项目根目录运行：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\init_db.py
+```
+
+应用服务启动时不再自动建表或吞掉初始化失败。新环境和 schema 变更部署应将此命令作为明确的 bootstrap 步骤执行。
+
 ---
 
 ## 三、部署后校验
 
-### 3.1 运行冒烟测试
+### 3.1 初始化后运行冒烟测试
 
 ```powershell
 python scripts/smoke_test.py
@@ -99,7 +109,7 @@ python scripts/smoke_test.py
 ============================================================
 [OK] 导入会话管理模块成功
 [INFO] 测试数据库连接...
-[OK] 数据库连接成功，表已创建
+[OK] 数据库连接成功
 [INFO] 测试 ConversationManager...
 [OK] ConversationManager 实例化成功
 [INFO] 测试创建会话...

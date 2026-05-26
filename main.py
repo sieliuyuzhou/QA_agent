@@ -1,11 +1,13 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from llm import chat_service
+from infrastructure.rag import get_store
 from utils import ConversationManager
 from tools import search_faq_tool
 from domain import CustomerServiceAgent
@@ -69,8 +71,23 @@ async def root():
 
 
 @app.get("/health")
-async def health():
-    return {"status": "ok"}
+async def health(request: Request):
+    checks = {}
+    manager = request.app.state.conversation_manager
+    try:
+        checks["database"] = "ok" if manager.db.ping() else "error"
+        get_store().count()
+        checks["knowledge_store"] = "ok"
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "checks": checks,
+                "error": type(exc).__name__,
+            },
+        )
+    return {"status": "ok", "checks": checks}
 
 
 if __name__ == "__main__":

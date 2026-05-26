@@ -206,6 +206,14 @@ python scripts/smoke_test.py
 CONVERSATION_DB_URL=postgresql://user:1234@localhost:5433/agent
 ```
 
+**数据库初始化：**
+
+```powershell
+.\.venv\Scripts\python.exe scripts\init_db.py
+```
+
+应用启动不会自动创建数据表，也不会忽略 schema 初始化失败；新环境应先显式执行上述 bootstrap 命令。
+
 **验证脚本：**
 
 ```bash
@@ -308,6 +316,9 @@ python scripts/smoke_test.py
 
 4. **启动方式**
    ```bash
+   # 新环境首次启动前初始化 PostgreSQL schema
+   python scripts/init_db.py
+
    # 开发模式
    python main.py
    
@@ -343,13 +354,19 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-### 3. 导入 FAQ 数据
+### 3. 初始化 PostgreSQL Schema
+
+```bash
+python scripts/init_db.py
+```
+
+### 4. 导入 FAQ 数据
 
 ```bash
 python scripts/import_faq.py
 ```
 
-### 4. 验证安装
+### 5. 验证安装
 
 ```bash
 python scripts/smoke_test.py

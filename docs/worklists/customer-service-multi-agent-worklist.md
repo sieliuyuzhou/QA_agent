@@ -7,7 +7,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 0 Task 5 已完成，准备执行 Task 6：显式数据库初始化与健康检查 |
+| 当前执行阶段 | Phase 0 Task 6 已完成，准备执行 Task 7：测试模式与 Phase 0 验收 |
 
 ## 1. 使用规则
 
@@ -72,7 +72,7 @@
 | `P0-003` | `P0` | 统一 `.env.example` 与代码读取的配置名称 | `DOC-006` | `DONE` | Embedding、LLM、数据库配置名称一致并有测试/启动验证 | 已统一为 `EMBEDDING_MODEL` |
 | `P0-004` | `P1` | 统一 Docker 端口配置与运行文档 | `DOC-006` | `DONE` | README、部署文档与 compose 示例一致，端口冲突方案明确 | 使用宿主机端口 `5433` |
 | `P0-005` | `P1` | 决策一期向量存储路径：暂留 Chroma 或迁移 pgvector | `DOC-006` | `DONE` | 形成有验收条件的明确决策并同步方案/任务 | Phase 0/1 保留 Chroma |
-| `P0-006` | `P1` | 引入显式数据库迁移方案，替代静默自动建表路径 | `P0-005` | `PENDING` | 数据结构变更可版本化执行、失败可见、可验证 | 可选迁移工具在实施计划确认 |
+| `P0-006` | `P1` | 引入显式数据库迁移方案，替代静默自动建表路径 | `P0-005` | `DONE` | 数据结构变更可版本化执行、失败可见、可验证 | `scripts/init_db.py` 显式执行幂等 schema bootstrap |
 
 ### 4.2 Agent 协议与可信回答
 
@@ -91,7 +91,7 @@
 | `P0-012` | `P0` | 建立不调用真实模型的 Agent 控制流单元测试 | `P0-007`, `P0-008` | `DONE` | 覆盖检索回答、反问、解析失败、兜底行为 | 当前覆盖 system prompt、反问、人工转接；降级分支随 `P0-010` 补齐 |
 | `P0-013` | `P0` | 建立引用和无依据降级测试 | `P0-009`, `P0-010` | `DONE` | 引用正确返回，低依据请求进入规定状态 | 覆盖引用透传、空检索转人工和澄清状态 |
 | `P0-014` | `P1` | 区分离线测试、数据库集成测试和外部 API 冒烟测试 | `P0-012` | `PENDING` | 默认测试不会消耗外部 API，冒烟测试显式执行 | 保护成本和数据 |
-| `P0-015` | `P1` | 完善健康检查和启动失败可见性 | `P0-003`, `P0-006` | `PENDING` | 数据库/向量依赖异常能反映为非健康或启动错误 | 移除静默吞错风险 |
+| `P0-015` | `P1` | 完善健康检查和启动失败可见性 | `P0-003`, `P0-006` | `DONE` | 数据库/向量依赖异常能反映为非健康或启动错误 | `/health` 返回数据库和本地知识库检查状态 |
 | `P0-016` | `P1` | Phase 0 回归验证和文档更新 | `P0-001` 至 `P0-015` | `PENDING` | 新环境启动验证、测试通过、README 与能力一致 | `M1` 验收任务 |
 
 ## 5. Phase 1：内部试用客服 MVP
@@ -190,6 +190,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P0-009`（`P0-013` 引用部分） | `pytest tests/test_agent_actions.py tests/test_agent_citations.py -q` 通过（5 passed）；未调用外部嵌入服务 | FAQ Tool 返回结构化来源，普通字符串接口保持兼容；无依据降级仍待实施 | 实施无依据回答降级和对话状态元数据 |
 | 2026-05-26 | `P0-010`, `P0-011`, `P0-013` | `pytest tests/test_agent_actions.py tests/test_agent_citations.py -q` 通过（7 passed） | 空来源检索后禁止猜测回答；状态暂以消息元数据持久化 | 纳入 FAQ 导入脚本并保留来源元数据 |
 | 2026-05-26 | `P0-002` | `pytest tests/test_faq_import.py tests/test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（6 passed） | FAQ 导入现保存文档来源；实时重建索引会调用嵌入服务，未在离线验证中执行 | 完善数据库初始化与健康检查 |
+| 2026-05-26 | `P0-006`, `P0-015` | `pytest tests -q --basetemp=.pytest_cache\tmp` 通过（13 passed）；`python scripts\init_db.py` 成功；真实 `/health` 返回两个依赖均为 `ok` | 启动不再静默建表；schema 初始化改为显式 bootstrap | 区分测试模式并完成 Phase 0 验收 |
 
 ## 10. 当前待办焦点
 
