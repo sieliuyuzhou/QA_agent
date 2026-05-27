@@ -52,11 +52,47 @@ CREATE TABLE IF NOT EXISTS mock_orders (
 );
 """
 
+CREATE_PENDING_ACTIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS pending_actions (
+    action_id           VARCHAR(36) PRIMARY KEY,
+    conversation_id     VARCHAR(36) NOT NULL REFERENCES conversations(conversation_id),
+    user_id             VARCHAR(128) NOT NULL REFERENCES mock_customers(user_id),
+    action_type         VARCHAR(32) NOT NULL CHECK(action_type IN ('create_service_ticket')),
+    order_id            VARCHAR(32) NOT NULL REFERENCES mock_orders(order_id),
+    ticket_type         VARCHAR(32) NOT NULL,
+    eligibility_code    VARCHAR(64) NOT NULL,
+    eligibility_payload JSONB NOT NULL,
+    issue_summary       TEXT NOT NULL,
+    display_summary     TEXT NOT NULL,
+    status              VARCHAR(16) NOT NULL CHECK(status IN ('pending', 'executed', 'expired', 'cancelled')),
+    expires_at          TIMESTAMP NOT NULL,
+    executed_ticket_id  VARCHAR(36),
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_SERVICE_TICKETS_TABLE = """
+CREATE TABLE IF NOT EXISTS service_tickets (
+    ticket_id        VARCHAR(36) PRIMARY KEY,
+    user_id          VARCHAR(128) NOT NULL REFERENCES mock_customers(user_id),
+    order_id         VARCHAR(32) NOT NULL REFERENCES mock_orders(order_id),
+    ticket_type      VARCHAR(32) NOT NULL,
+    issue_summary    TEXT NOT NULL,
+    eligibility_code VARCHAR(64) NOT NULL,
+    status           VARCHAR(16) NOT NULL CHECK(status IN ('submitted')),
+    created_at       TIMESTAMP DEFAULT NOW(),
+    updated_at       TIMESTAMP DEFAULT NOW()
+);
+"""
+
 CREATE_INDEXES = """
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_messages_turn_number ON messages(conversation_id, turn_number);
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_mock_orders_user_id ON mock_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_pending_actions_owner ON pending_actions(user_id, conversation_id);
+CREATE INDEX IF NOT EXISTS idx_service_tickets_owner ON service_tickets(user_id, order_id);
 """
 
 INSERT_CONVERSATION = """
@@ -170,6 +206,45 @@ SET user_id = EXCLUDED.user_id,
     amount = EXCLUDED.amount;
 """
 
+INSERT_PENDING_ACTION = """
+INSERT INTO pending_actions (
+    action_id, conversation_id, user_id, action_type, order_id, ticket_type,
+    eligibility_code, eligibility_payload, issue_summary, display_summary,
+    status, expires_at
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+"""
+
+SELECT_PENDING_ACTION_FOR_UPDATE = """
+SELECT action_id, conversation_id, user_id, action_type, order_id, ticket_type,
+       eligibility_code, eligibility_payload, issue_summary, display_summary,
+       status, expires_at, executed_ticket_id
+FROM pending_actions
+WHERE action_id = %s AND conversation_id = %s AND user_id = %s
+FOR UPDATE;
+"""
+
+INSERT_SERVICE_TICKET = """
+INSERT INTO service_tickets (
+    ticket_id, user_id, order_id, ticket_type, issue_summary,
+    eligibility_code, status
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s);
+"""
+
+SELECT_SERVICE_TICKET_BY_ID_AND_USER = """
+SELECT ticket_id, user_id, order_id, ticket_type, issue_summary,
+       eligibility_code, status
+FROM service_tickets
+WHERE ticket_id = %s AND user_id = %s;
+"""
+
+UPDATE_PENDING_ACTION_EXECUTED = """
+UPDATE pending_actions
+SET status = 'executed', executed_ticket_id = %s, updated_at = NOW()
+WHERE action_id = %s AND status = 'pending';
+"""
+
 
 def init_tables(db_manager):
     db_manager.execute(CREATE_CONVERSATIONS_TABLE)
@@ -177,4 +252,6 @@ def init_tables(db_manager):
     db_manager.execute(CREATE_MOCK_CUSTOMERS_TABLE)
     db_manager.execute(CREATE_PRODUCTS_TABLE)
     db_manager.execute(CREATE_MOCK_ORDERS_TABLE)
+    db_manager.execute(CREATE_PENDING_ACTIONS_TABLE)
+    db_manager.execute(CREATE_SERVICE_TICKETS_TABLE)
     db_manager.execute(CREATE_INDEXES)

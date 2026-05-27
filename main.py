@@ -8,11 +8,11 @@ load_dotenv()
 
 from llm import chat_service
 from infrastructure.rag import get_store
-from utils import ConversationManager, CustomerRepository, OrderRepository
+from utils import ConversationManager, CustomerRepository, OrderRepository, TicketRepository
 from tools import search_faq_tool
 from domain import CustomerServiceAgent
-from domain.customer_service.orders import OrderQueryService
-from apps.customer_service import order_router, router
+from domain.customer_service import EligibilityRuleService, OrderQueryService, TicketActionService
+from apps.customer_service import action_router, order_router, router
 
 
 conversation_manager: ConversationManager = None
@@ -43,6 +43,11 @@ async def lifespan(app: FastAPI):
     app.state.order_service = OrderQueryService(
         OrderRepository(conversation_manager.db)
     )
+    app.state.ticket_action_service = TicketActionService(
+        TicketRepository(conversation_manager.db),
+        app.state.order_service,
+        EligibilityRuleService(),
+    )
     app.state.agent = agent
     
     yield
@@ -60,6 +65,7 @@ app = FastAPI(
 
 app.include_router(router, prefix="/api")
 app.include_router(order_router, prefix="/api")
+app.include_router(action_router, prefix="/api")
 
 
 @app.get("/")

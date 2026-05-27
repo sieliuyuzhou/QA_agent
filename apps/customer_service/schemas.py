@@ -66,6 +66,43 @@ class OrderListResponse(BaseModel):
     total: int
 
 
+class CreateTicketActionRequest(BaseModel):
+    order_id: str
+    request_type: Literal["return_or_exchange", "warranty_repair", "paid_repair"]
+    issue_cause: Literal["non_human_fault", "human_damage", "unknown"]
+    packaging_intact: Optional[bool] = None
+    issue_summary: str = Field(..., min_length=1)
+
+
+class PendingActionItem(BaseModel):
+    action_id: str
+    action_type: str
+    display_summary: str
+    expires_at: str
+
+
+class CreatePendingActionResponse(BaseModel):
+    type: Literal["confirm_action"] = "confirm_action"
+    content: str
+    conversation_id: str
+    pending_action: PendingActionItem
+
+
+class ServiceTicketItem(BaseModel):
+    ticket_id: str
+    order_id: str
+    ticket_type: str
+    status: str
+
+
+class ConfirmTicketResponse(BaseModel):
+    type: Literal["final_answer"] = "final_answer"
+    content: str
+    conversation_id: str
+    ticket: ServiceTicketItem
+    idempotent_replay: bool
+
+
 class CreateConversationRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
