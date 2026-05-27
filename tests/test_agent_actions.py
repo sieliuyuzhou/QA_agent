@@ -41,3 +41,16 @@ def test_handoff_stops_loop_and_returns_user_visible_reason():
         "action_type": "handoff",
         "conversation_state": "handoff_requested",
     }
+
+
+def test_handoff_response_includes_summary_in_metadata():
+    agent, manager, _ = build_agent("Action: Handoff[用户要求人工服务。]")
+
+    response = agent.run("转人工", "conv-1")
+
+    assert response.type == "handoff"
+    assert "handoff_summary" in response.metadata
+    summary = response.metadata["handoff_summary"]
+    assert summary["reason"] == "用户要求人工服务。"
+    assert isinstance(summary["facts"], list)
+    assert isinstance(summary["steps_taken"], list)

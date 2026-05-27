@@ -20,7 +20,7 @@ class CustomerRepository:
         )
         if not row:
             return None
-        return CurrentUser(user_id=row[0], display_name=row[1])
+        return CurrentUser(user_id=row[0], display_name=row[1], role=row[2])
 
 
 def _to_order_view(row) -> OrderView:

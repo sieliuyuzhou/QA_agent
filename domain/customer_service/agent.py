@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
 from tools.base import ToolResult
+from .handoff import build_handoff_summary
 from .prompts import build_system_prompt, build_user_prompt
 
 
@@ -26,6 +27,7 @@ class CustomerServiceAgent:
         system_prompt: Optional[str] = None,
         max_steps: int = 5,
         after_sales_workflow=None,
+        diagnosis_workflow=None,
     ):
         self.llm = llm
         self.conversation_manager = conversation_manager
@@ -33,6 +35,7 @@ class CustomerServiceAgent:
         self.system_prompt = system_prompt
         self.max_steps = max_steps
         self.after_sales_workflow = after_sales_workflow
+        self.diagnosis_workflow = diagnosis_workflow
         self._tools_map = {tool.name: tool for tool in tools}
 
     def _find_tool(self, name: str):
@@ -100,7 +103,7 @@ class CustomerServiceAgent:
                 result["action"] = action_match.group(1).strip()
         
         if result["action"]:
-            action_pattern = r"(\w+)\s*\[(.+?)\]"
+            action_pattern = r"(\w+)\s*\[(.+)\]"
             action_match = re.match(action_pattern, result["action"])
             if action_match:
                 result["action_name"] = action_match.group(1).strip()
@@ -263,7 +266,57 @@ class CustomerServiceAgent:
                     citations=workflow_citations,
                     pending_action=pending_action,
                 )
-            
+
+            if action_name == "PrepareDiagnosis":
+                if not self.diagnosis_workflow:
+                    response_type = "handoff"
+                    content = "当前无法处理故障排查，已为您转接人工进一步确认。"
+                    workflow_metadata = {}
+                    workflow_citations = []
+                else:
+                    try:
+                        payload = json.loads(action_input)
+                    except json.JSONDecodeError:
+                        payload = None
+                    if not isinstance(payload, dict):
+                        response_type = "ask_user"
+                        content = "请提供产品型号和故障现象，以便为您排查问题。"
+                        workflow_metadata = {
+                            "intent": "diagnosis",
+                            "workflow": "diagnosis",
+                        }
+                        workflow_citations = []
+                    else:
+                        result = self.diagnosis_workflow.prepare(
+                            conversation_id, payload
+                        )
+                        response_type = result.response_type
+                        content = result.content
+                        workflow_metadata = result.metadata
+                        workflow_citations = result.citations
+                states = {
+                    "final_answer": "active",
+                    "ask_user": "awaiting_clarification",
+                    "handoff": "handoff_requested",
+                }
+                self.conversation_manager.add_message(
+                    conversation_id,
+                    "assistant",
+                    content,
+                    metadata={
+                        "action_type": response_type,
+                        "conversation_state": states[response_type],
+                        **workflow_metadata,
+                    },
+                )
+                return AgentResponse(
+                    type=response_type,
+                    content=content,
+                    conversation_id=conversation_id,
+                    metadata={"total_steps": step + 1, **workflow_metadata},
+                    citations=workflow_citations,
+                )
+
             terminal_actions = {
                 "Finish": "final_answer",
                 "AskUser": "ask_user",
@@ -293,13 +346,28 @@ class CustomerServiceAgent:
                         "conversation_state": states[response_type],
                     },
                 )
+                agent_metadata = {"total_steps": step + 1}
+                if response_type == "handoff":
+                    summary = build_handoff_summary(
+                        conversation_id=conversation_id,
+                        user_id=current_user.user_id if current_user else "unknown",
+                        reason=final_answer,
+                        context_messages=context_messages,
+                    )
+                    agent_metadata["handoff_summary"] = {
+                        "reason": summary.reason,
+                        "product_model": summary.product_model,
+                        "facts": summary.facts,
+                        "steps_taken": summary.steps_taken,
+                        "remaining": summary.remaining,
+                    }
                 if verbose:
                     print(f"\n[{action_name}] 返回内容: {final_answer[:200]}..." if len(final_answer) > 200 else f"\n[{action_name}] 返回内容: {final_answer}")
                 return AgentResponse(
                     type=response_type,
                     content=final_answer,
                     conversation_id=conversation_id,
-                    metadata={"total_steps": step + 1},
+                    metadata=agent_metadata,
                     citations=citations,
                 )
             

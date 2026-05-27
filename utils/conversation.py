@@ -12,6 +12,7 @@ from infrastructure.models import (
     SELECT_RECENT_MESSAGES,
     SELECT_MAX_TURN_NUMBER,
     SELECT_CONVERSATIONS_BY_USER,
+    SELECT_ALL_CONVERSATIONS,
     UPDATE_CONVERSATION_TITLE,
     UPDATE_CONVERSATION_TIMESTAMP,
     CLOSE_CONVERSATION,
@@ -164,6 +165,25 @@ class ConversationManager:
             })
         
         return conversations
+
+    def list_all_conversations(self) -> List[Dict[str, Any]]:
+        results = self.db.execute(
+            SELECT_ALL_CONVERSATIONS,
+            fetch=True,
+        )
+        if not results:
+            return []
+        return [
+            {
+                "conversation_id": row[0],
+                "user_id": row[1],
+                "title": row[2],
+                "status": row[3],
+                "created_at": str(row[4]),
+                "updated_at": str(row[5]),
+            }
+            for row in results
+        ]
 
     def update_title(self, conversation_id: str, title: str) -> None:
         self.db.execute(UPDATE_CONVERSATION_TITLE, (title, conversation_id))

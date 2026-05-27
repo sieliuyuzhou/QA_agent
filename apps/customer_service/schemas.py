@@ -96,6 +96,16 @@ class ServiceTicketItem(BaseModel):
     status: str
 
 
+class TicketItem(BaseModel):
+    ticket_id: str
+    user_id: str
+    order_id: str
+    ticket_type: str
+    issue_summary: str
+    eligibility_code: str
+    status: str
+
+
 class ConfirmTicketResponse(BaseModel):
     type: Literal["final_answer"] = "final_answer"
     content: str

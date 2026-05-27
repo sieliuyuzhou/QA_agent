@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class CurrentUser:
     user_id: str
     display_name: str
+    role: str = "customer"
 
 
 @dataclass(frozen=True)

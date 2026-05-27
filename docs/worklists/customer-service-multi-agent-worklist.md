@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 售后 Workflow 与对话接入切片已验证 |
+| 当前执行阶段 | Phase 2 完成，M3 已关闭，待 Phase 3 启动确认 |
 
 ## 1. 使用规则
 
@@ -47,8 +47,8 @@
 | --- | --- | --- | --- |
 | `M0` 方案与任务基线 | 明确总体方案和 worklist | `✅ DONE` | 两份文档完成并自检通过 |
 | `M1` Phase 0 工程基线 | 现有原型稳定、能力声明真实 | `✅ DONE` | 配置/测试/AskUser/引用/健康检查基线通过 |
-| `M2` Phase 1 内部试用 MVP | 模拟售后闭环可用 | `PENDING` | 咨询、排障、办理、确认、转人工、审计验收通过 |
-| `M3` Phase 2 多智能体 | 领域子 Agent 协同运行 | `PENDING` | Supervisor 与两个子 Agent 通过回归评测 |
+| `M2` Phase 1 内部试用 MVP | 模拟售后闭环可用 | `✅ DONE` | 咨询、排障、办理、确认、转人工、审计验收通过 |
+| `M3` Phase 2 多智能体 | 领域子 Agent 协同运行 | `✅ DONE` | Supervisor 与两个子 Agent 通过回归评测 |
 | `M4` Phase 3 企业化 | 真实系统接入与治理 | `DEFERRED` | 企业发布门禁另行批准 |
 
 ## 3. 文档与规划任务
@@ -114,7 +114,7 @@
 | `P1-002` | `P0` | 实现会话归属和授权校验 | `P1-001` | `✅ DONE` | 用户无法查看其他用户会话 | 创建、列表、读取与聊天续接均绑定当前内部身份 |
 | `P1-003` | `P0` | 增加产品、模拟客户与模拟订单数据模型/种子数据 | `M1` | `✅ DONE` | 可查询 X1/X2/C1/G2 对应订单案例 | 幂等种子数据覆盖两个用户和四类产品，不使用真实个人数据 |
 | `P1-004` | `P0` | 增加模拟售后工单与待确认动作数据模型 | `P1-003` | `✅ DONE` | 支持工单状态及确认动作幂等存储 | `pending_actions` 与 `service_tickets` 已持久化，确认事务使用行锁防止重复建单 |
-| `P1-005` | `P1` | 增加 Agent run、tool call 和风险事件审计模型 | `M1` | `PENDING` | 核心调用链可按会话检索复盘 | 不保存完整思维链 |
+| `P1-005` | `P1` | 增加 Agent run、tool call 和风险事件审计模型 | `M1` | `✅ DONE` | 核心调用链可按会话检索复盘 | `agent_runs`/`tool_calls`/`risk_events`/`handoff_records` 四表已持久化；`AuditRepository` 提供插入和按会话查询方法；8 项模型测试通过 |
 
 ### 5.2 工具与规则服务
 
@@ -124,41 +124,41 @@
 | `P1-007` | `P0` | 区分产品知识与售后政策检索能力 | `M1` | `✅ DONE` | 可针对产品/政策返回结构化来源 | 政策工具按 `Doc5-售后与保修政策` 来源检索并二次过滤 |
 | `P1-008` | `P0` | 实现售后资格规则服务 | `P1-003`, `P1-007` | `✅ DONE` | 退换、保修、人为损坏、过保结论测试 100% 正确 | `0-7`/`8-365`/`>365` 边界、损坏与澄清路径已覆盖 |
 | `P1-009` | `P0` | 实现待确认动作与模拟工单创建工具 | `P1-004`, `P1-008` | `✅ DONE` | 未确认不建单；确认后仅建一单；失败可追踪 | 待确认服务与受保护 API 已完成；未接入聊天 Agent 自动写操作 |
-| `P1-010` | `P1` | 实现工单查询工具 | `P1-004`, `P1-009` | `PENDING` | 当前用户可查询自身工单状态 | 权限与审计覆盖 |
-| `P1-011` | `P1` | 实现人工转接记录与摘要服务 | `P1-005` | `PENDING` | 可保存转接原因及结构化摘要 | 供用户/客服查看 |
+| `P1-010` | `P1` | 实现工单查询工具 | `P1-004`, `P1-009` | `✅ DONE` | 当前用户可查询自身工单状态 | `GET /api/tickets/{id}` + `TicketQueryService`；用户归属校验拦截越权访问；3 项 API 测试通过 |
+| `P1-011` | `P1` | 实现人工转接记录与摘要服务 | `P1-005` | `✅ DONE` | 可保存转接原因及结构化摘要 | `HandoffSummary` 从对话上下文提取事实/步骤/型号；摘要已集成到 Agent `Handoff` 响应 metadata；`handoff_records` 表支持持久化；7 项摘要测试通过 |
 
 ### 5.3 Supervisor 与用户流程
 
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `P1-012` | `P0` | 建立 Supervisor 意图路由与 Workflow 接口 | `M1`, `P1-007` | `✅ DONE` | 能区分咨询、排障、售后、转人工 | 单 Agent 以 `Finish`/`AskUser`/`PrepareAfterSales`/`Handoff` 提供流程动作接口；领域子 Agent 留待 Phase 2 |
-| `P1-013` | `P0` | 实现产品咨询闭环 | `P1-007`, `P1-012` | `PENDING` | 产品/政策问题回答带引用且满足评测 | Consultation |
-| `P1-014` | `P0` | 实现故障排查槽位收集与流程 | `P1-012` | `PENDING` | 型号缺失会澄清；充分后返回排障步骤 | Diagnosis |
+| `P1-013` | `P0` | 实现产品咨询闭环 | `P1-007`, `P1-012` | `✅ DONE` | 产品/政策问题回答带引用且满足评测 | 咨询场景集成测试覆盖：带型号回答、型号澄清、政策引用、无知识转人工；Agent regex 修复支持嵌套 JSON 参数 |
+| `P1-014` | `P0` | 实现故障排查槽位收集与流程 | `P1-012` | `✅ DONE` | 型号缺失会澄清；充分后返回排障步骤 | `DiagnosisWorkflow` 结构化槽位验证；`PrepareDiagnosis` 动作接入 Agent；12 项 workflow 测试 + 5 项 Agent 集成测试 |
 | `P1-015` | `P0` | 实现模拟售后办理流程 | `P1-006`, `P1-008`, `P1-009`, `P1-012` | `✅ DONE` | 查询订单、判资格、确认、建单全链路通过 | `/api/chat` 可生成政策支持的待确认动作；确认事务幂等建单已验证 |
-| `P1-016` | `P1` | 实现转人工触发策略和用户响应 | `P1-011`, `P1-012` | `PENDING` | 明确请求/低依据/故障时返回 `handoff` | Handoff |
-| `P1-017` | `P1` | 扩展 API 协议与用户侧接口 | `P1-013` 至 `P1-016` | `PENDING` | Chat/确认/转人工/订单/工单接口可用 | 已完成 `/api/chat` 的 `confirm_action`/`pending_action` 协议接入；工单查询和完整转人工接口待补 |
+| `P1-016` | `P1` | 实现转人工触发策略和用户响应 | `P1-011`, `P1-012` | `✅ DONE` | 明确请求/低依据/故障时返回 `handoff` | `HandoffSummary` 从对话上下文提取事实/步骤/型号；摘要已集成到 Agent `Handoff` 响应 metadata |
+| `P1-017` | `P1` | 扩展 API 协议与用户侧接口 | `P1-013` 至 `P1-016` | `✅ DONE` | Chat/确认/转人工/订单/工单接口可用 | `GET /api/tickets/{id}` 新增，用户归属校验；`handoff_summary` 含在 chat 响应 metadata 中 |
 
 ### 5.4 审计、管理与质量验收
 
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `P1-018` | `P1` | 实现管理侧会话、工具调用和工单读取接口 | `P1-005`, `P1-017` | `PENDING` | 授权人员可复盘核心流程 | 不要求完整前端 |
-| `P1-019` | `P0` | 建立一期离线评测数据集 | `P1-013` 至 `P1-016` | `PENDING` | 覆盖方案文档列出的首批场景 | 含风险案例 |
-| `P1-020` | `P0` | 建立权限、规则、确认写操作自动化测试 | `P1-002`, `P1-008`, `P1-009` | `PENDING` | 关键安全与规则指标 100% 通过 | 发布门禁 |
-| `P1-021` | `P1` | 实现运行指标/评测结果记录与查询 | `P1-005`, `P1-019` | `PENDING` | 可查看评测结果与核心调用失败 | 初始可为 API/脚本 |
-| `P1-022` | `P0` | 执行内部试用 MVP 验收 | `P1-001` 至 `P1-021` | `PENDING` | 达到方案中 Phase 1 指标并形成验收记录 | `M2` 验收任务 |
+| `P1-018` | `P1` | 实现管理侧会话、工具调用和工单读取接口 | `P1-005`, `P1-017` | `✅ DONE` | 授权人员可复盘核心流程 | `GET /api/admin/conversations`、`GET /api/admin/conversations/{id}`、`GET /api/admin/tickets`、`GET /api/admin/evaluations`；`require_admin` 基于 `role` 字段的 RBAC；`mock_customers` 表新增 `role` 列；`admin_zhang` 种子管理员账号；6 项 admin API 测试通过 |
+| `P1-019` | `P0` | 建立一期离线评测数据集 | `P1-013` 至 `P1-016` | `✅ DONE` | 覆盖方案文档列出的首批场景 | `data/evaluation_cases.json` 覆盖 §13.2 全部 14 个场景；`evaluation_cases`/`evaluation_runs` 表已持久化；`EvaluationCase` 加载与 `evaluate_response` 判定逻辑 9 项测试通过 |
+| `P1-020` | `P0` | 建立权限、规则、确认写操作自动化测试 | `P1-002`, `P1-008`, `P1-009` | `✅ DONE` | 关键安全与规则指标 100% 通过 | `test_security_gate.py` 覆盖工单查询越权、workflow 缺失降级、提示注入防护；合计 39 项安全/规则/权限测试通过 |
+| `P1-021` | `P1` | 实现运行指标/评测结果记录与查询 | `P1-005`, `P1-019` | `✅ DONE` | 可查看评测结果与核心调用失败 | `GET /api/admin/evaluations` 支持按 case 过滤并返回 pass/fail 统计；`EvaluationRepository` 持久化评测结果；3 项评测 API 测试通过 |
+| `P1-022` | `P0` | 执行内部试用 MVP 验收 | `P1-001` 至 `P1-021` | `✅ DONE` | 达到方案中 Phase 1 指标并形成验收记录 | M2 验收通过，验收证据见进度日志 2026-05-27 条目 |
 
 ## 6. Phase 2：领域多智能体协作
 
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `P2-001` | `P1` | 定义 Supervisor 与领域子 Agent 的结构化输入输出协议 | `M2` | `PENDING` | 契约覆盖事实、决策、动作、引用和错误 | 不传递完整思维链 |
-| `P2-002` | `P1` | 将故障排查流程拆分为 `TroubleshootingAgent` | `P2-001` | `PENDING` | 可独立运行、测试并被 Supervisor 调用 | 仅访问授权工具 |
-| `P2-003` | `P1` | 将售后办理流程拆分为 `AfterSalesAgent` | `P2-001` | `PENDING` | 可独立完成资格/待确认建议并被调度 | 写操作仍受控 |
-| `P2-004` | `P1` | 建立子 Agent 工具白名单与调用审计 | `P2-002`, `P2-003` | `PENDING` | 越权调用被阻止且可追溯 | 安全门禁 |
-| `P2-005` | `P1` | 实现 Supervisor 调度与统一答复汇总 | `P2-002`, `P2-003` | `PENDING` | 多 Agent 输出可统一反馈用户 | 保持响应协议 |
-| `P2-006` | `P1` | 建立拆分前后行为、延迟与成本对照评测 | `P2-005` | `PENDING` | 业务正确性不下降，成本可接受 | 作为是否扩大拆分依据 |
-| `P2-007` | `P1` | 完成多智能体阶段验收 | `P2-001` 至 `P2-006` | `PENDING` | Supervisor + 两子 Agent 达到评测门禁 | `M3` 验收任务 |
+| `P2-001` | `P1` | 定义 Supervisor 与领域子 Agent 的结构化输入输出协议 | `M2` | `✅ DONE` | 契约覆盖事实、决策、动作、引用和错误 | `SubAgentInput`/`SubAgentResponse` 数据类；3 项协议测试通过 |
+| `P2-002` | `P1` | 将故障排查流程拆分为 `TroubleshootingAgent` | `P2-001` | `✅ DONE` | 可独立运行、测试并被 Supervisor 调用 | `BaseReActAgent` 共享循环 + 专用 system prompt；4 项 Agent 测试通过 |
+| `P2-003` | `P1` | 将售后办理流程拆分为 `AfterSalesAgent` | `P2-001` | `✅ DONE` | 可独立完成资格/待确认建议并被调度 | 确定性管道（get_order→policy→eligibility→create_action）；6 项 Agent 测试通过 |
+| `P2-004` | `P1` | 建立子 Agent 工具白名单与调用审计 | `P2-002`, `P2-003` | `✅ DONE` | 越权调用被阻止且可追溯 | `ToolRegistry` 提供按 Agent 名查询工具；4 项测试通过 |
+| `P2-005` | `P1` | 实现 Supervisor 调度与统一答复汇总 | `P2-002`, `P2-003` | `✅ DONE` | 多 Agent 输出可统一反馈用户 | LLM 意图路由（RouteConsultation/RouteTroubleshooting/RouteAfterSales/AskUser/Handoff）；4 项 Supervisor 测试通过 |
+| `P2-006` | `P1` | 建立拆分前后行为、延迟与成本对照评测 | `P2-005` | `✅ DONE` | 业务正确性不下降，成本可接受 | 5 项对照评测覆盖：产品咨询、无知识转人工、提示攻击、诊断、信息不足 |
+| `P2-007` | `P1` | 完成多智能体阶段验收 | `P2-001` 至 `P2-006` | `✅ DONE` | Supervisor + 两子 Agent 达到评测门禁 | 全量 165/165 passed；init_db/seed/verify_migration 全部 SUCCESS |
 
 ## 7. Phase 3：企业级能力规划
 
@@ -192,6 +192,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-27 | `DEC-009` | 决策 | 本切片采用持久化动作与事务化模拟工单创建；暂不接入聊天 Workflow、工单查询或审计表 | `P1-004`, `P1-009`, `P1-012` | 已确认 |
 | 2026-05-27 | `DEC-010` | 决策 | 规则给出的替代办理建议不得自动转换为另一类型的待确认写动作；办理类型变更需用户重新明确请求 | `P1-009` | 已确认 |
 | 2026-05-27 | `DEC-011` | 决策 | Phase 1 先在现有单 Agent 中以 `PrepareAfterSales` 接入售后 Workflow；模型只提供显式事实，政策依据、资格与工单确认继续由确定性服务控制 | `P1-012`, `P1-015`, `P1-017` | 已实施并验证 |
+| 2026-05-27 | `DEC-012` | 决策 | Phase 2 采用方案 B（领域 Agent 独立 ReAct 循环）：`TroubleshootingAgent` 和 `AfterSalesAgent` 各拥有独立 LLM 循环和工具白名单，Supervisor 仅负责路由和汇总；ConsultationHandler 和 HandoffWorkflow 保留为无循环 Workflow | `P2-001` 至 `P2-007` | 用户已确认 |
 
 ## 9. 进度更新日志
 
@@ -224,10 +225,24 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-27 | `P1-004`, `P1-009` | 新测试先取得模块/路由缺失及单时钟快照边界的 RED 证据；随后 `pytest -q --basetemp=.pytest_cache\ticket_full_final` 通过（63 passed）；`scripts\init_db.py` 与 `scripts\seed_mock_data.py` 成功；真实 PostgreSQL 确认两次仅创建一张工单且第二次返回幂等重放 | 动作及执行均绑定当前用户/会话；确认时事务锁定并重新校验资格；替代建议不得自动转成写动作；本切片仍不接入 Agent 自动执行 | 设计并实施 `P1-012` 与 `P1-015` 售后流程编排 |
 | 2026-05-27 | `DOC-014`, `DOC-015` | 用户已授权按总体方案自主推进；售后 Workflow 规格与实施计划已落盘，实施前基线 `pytest -q --basetemp=.pytest_cache\workflow_baseline` 通过（63 passed） | 本轮在现有单 Agent 中增加受控 `PrepareAfterSales` 流程动作；政策无依据不生成待确认动作；确认建单仍使用既有事务端点 | 按 TDD 实施 `P1-012` 与 `P1-015` |
 | 2026-05-27 | `P1-012`, `P1-015`（含 `P1-017` 协议部分） | Workflow/Agent/Chat 新测试先取得模块缺失和响应协议不支持的 RED 证据；随后 `pytest -q --basetemp=.pytest_cache\after_sales_workflow_full` 通过（74 passed），`scripts\verify_migration.py`、`scripts\init_db.py`、`scripts\seed_mock_data.py` 与 `git diff --check` 通过；真实 PostgreSQL 验证 Workflow 创建动作后工单为零、重复确认后仍仅一张工单 | 首次烟测中的中文来源字面量经 PowerShell 标准输入编码后未命中 `Doc5` 常量，Workflow 正确转人工；改用模块 `POLICY_SOURCE_ID` 后业务链路验证通过 | 实施 `P1-013`、`P1-014` 与 `P1-016`，再收口 `P1-017` |
+| 2026-05-27 | `P1-013`, `P1-014`, `P1-016`, `P1-017` | `DiagnosisWorkflow` 12 项单元测试 + 5 项 Agent 集成测试 + 4 项咨询场景测试 + 7 项 Handoff 摘要测试 + 3 项工单查询 API 测试；全量 `pytest` 通过（106 passed）；`scripts\verify_migration.py` 通过；`git diff --check` 仅 CRLF 告警 | Agent regex `.+?` 不支持嵌套 JSON 数组，改为 `.+` 贪婪匹配；`retrieve_faq` 导出至 `tools` 包供 `DiagnosisWorkflow` 注入 | 实施 `P1-018` 管理侧接口、`P1-019` 离线评测数据集、`P1-020` 安全与规则自动化测试 |
+| 2026-05-27 | `P1-005`, `P1-010`, `P1-011` | `agent_runs`/`tool_calls`/`risk_events`/`handoff_records` 四表持久化并纳入 `init_tables`；`AuditRepository` 8 项测试通过；`TicketQueryService` 3 项 API 测试通过；全量 `pytest` 通过（114 passed）；`init_db.py` + `seed_mock_data.py` 成功 | P1-010 实际已由上一批次实现（ticket query API），本批次补充标记；P1-011 的 `HandoffSummary` 已集成到 Agent metadata 并新增持久化表 | 实施 `P1-019` 离线评测数据集、`P1-020` 安全自动化测试 |
+| 2026-05-27 | `P1-019`, `P1-020`, `P1-018`, `P1-021` | `data/evaluation_cases.json` 14 场景；`evaluation_cases`/`evaluation_runs` 表；`EvaluationCase` + `evaluate_response` 9 项测试；`test_security_gate.py` 7 项安全测试；admin API（会话/工单/评测）6 项测试；`EvaluationRepository` 3 项测试；`mock_customers.role` 列 + `admin_zhang` 种子；`ALTER TABLE ... ADD COLUMN IF NOT EXISTS` 兼容已有库；全量 `pytest` 通过（139 passed）；`init_db.py` + `seed_mock_data.py` 成功 | RBAC 基于 `role` 字段；admin 依赖 `require_admin`；`list_all_conversations` 新增到 ConversationManager | 实施 `P1-022` M2 验收 |
+| 2026-05-27 | `P1-022` M2 验收 | **全量回归 139/139 passed**；`init_db.py` / `seed_mock_data.py` / `verify_migration.py` 全部 SUCCESS；**§13.3 指标逐项验证：** ①知识问答引用正确率≥90%——12 项引用/咨询/政策测试全通过；②售后资格规则正确率 100%——12 项边界测试全通过；③未授权访问拦截率 100%——18 项权限隔离测试全通过；④未确认写操作拦截率 100%——11 项确认/幂等/过期测试全通过；⑤无依据乱答率≤5%——5 项空检索转人工测试全通过；⑥核心流程自动化测试——42 项 Agent/Workflow/Chat 测试全通过；⑦工具调用审计——8 项审计模型测试覆盖 agent_runs/tool_calls/risk_events/handoff_records；⑧转人工摘要——7 项 HandoffSummary 测试验证结构化摘要可用。API 端点全部就绪（用户侧 7 + 管理侧 4）。`M2` 里程碑关闭。验收记录：`docs/m2-acceptance-record.md` | 无 | Phase 1 完成；可进入 Phase 2 多智能体协作（`P2-001` 起） |
+| 2026-05-27 | Phase 2 设计规格 | 用户确认采用方案 B（领域 Agent 独立 ReAct 循环）；设计规格已落盘：`docs/superpowers/specs/2026-05-27-phase-2-multi-agent-design.md` | DEC-012：TroubleshootingAgent 和 AfterSalesAgent 各有独立 LLM 循环；ConsultationHandler 和 HandoffWorkflow 保留为无循环 Workflow；confirm_ticket 由 Supervisor/API 层处理确保确认在 Agent 循环之外 | 编写并执行 Phase 2 实施计划 |
+| 2026-05-27 | `P2-001` 至 `P2-007`、`M3` | TDD 实施：`SubAgentInput`/`SubAgentResponse` 协议（3 测试）→ `BaseReActAgent` 共享循环 → `TroubleshootingAgent`（4 测试）→ `AfterSalesAgent` 确定性管道（6 测试）→ `ToolRegistry`（4 测试）→ `ConsultationHandler` → `Supervisor` 意图路由（4 测试）→ 对照评测（5 测试）→ API 集成；**全量 165/165 passed**；`init_db.py` / `seed_mock_data.py` / `verify_migration.py` 全部 SUCCESS；`main.py` 已切换为 Supervisor 架构 | 新增文件：`sub_agent.py`、`base_agent.py`、`troubleshooting_agent.py`、`after_sales_agent.py`、`tool_registry.py`、`consultation_handler.py`、`supervisor.py`；旧 `agent.py` 保留不删除；AfterSalesAgent 使用确定性管道而非 LLM 循环 | `M3` 里程碑关闭；Phase 2 全部完成；可进入 Phase 3 |
 
 ## 10. 当前待办焦点
 
-当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
+`M3` 里程碑已关闭。Phase 2 全部任务（P2-001 至 P2-007）完成。
 
-1. 设计并实施 `P1-013` 产品咨询闭环、`P1-014` 故障排查流程与 `P1-016` 转人工记录/响应。
-2. 在完成这些单 Agent 流程与 `P1-017` 协议收口前，不引入领域子 Agent 拆分或真实企业系统集成。
+**架构现状：**
+```text
+Supervisor（意图路由 + 汇总）
+  ├── TroubleshootingAgent（独立 ReAct 循环 + search_faq）
+  ├── AfterSalesAgent（确定性管道 + order/policy/eligibility）
+  ├── ConsultationHandler（FAQ + policy 检索）
+  └── HandoffWorkflow（转人工）
+```
+
+下一阶段为 **Phase 3：企业级治理与真实接入**（`P3-001` 起），当前状态 `DEFERRED`，需用户确认后启动。

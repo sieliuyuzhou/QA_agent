@@ -15,9 +15,10 @@ from infrastructure.models import (
 
 
 CUSTOMERS = [
-    ("customer_alice", "Alice Test", "active"),
-    ("customer_bob", "Bob Test", "active"),
-    ("customer_disabled", "Disabled Test", "disabled"),
+    ("customer_alice", "Alice Test", "customer", "active"),
+    ("customer_bob", "Bob Test", "customer", "active"),
+    ("customer_disabled", "Disabled Test", "customer", "disabled"),
+    ("admin_zhang", "Zhang Admin", "admin", "active"),
 ]
 
 PRODUCTS = [

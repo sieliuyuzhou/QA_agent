@@ -27,6 +27,7 @@ CREATE_MOCK_CUSTOMERS_TABLE = """
 CREATE TABLE IF NOT EXISTS mock_customers (
     user_id       VARCHAR(128) PRIMARY KEY,
     display_name  VARCHAR(128) NOT NULL,
+    role          VARCHAR(16) NOT NULL DEFAULT 'customer',
     status        VARCHAR(16) NOT NULL CHECK(status IN ('active', 'disabled')),
     created_at    TIMESTAMP DEFAULT NOW()
 );
@@ -93,6 +94,89 @@ CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_mock_orders_user_id ON mock_orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_pending_actions_owner ON pending_actions(user_id, conversation_id);
 CREATE INDEX IF NOT EXISTS idx_service_tickets_owner ON service_tickets(user_id, order_id);
+CREATE INDEX IF NOT EXISTS idx_agent_runs_conversation ON agent_runs(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_tool_calls_run ON tool_calls(run_id);
+CREATE INDEX IF NOT EXISTS idx_risk_events_conversation ON risk_events(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_handoff_records_conversation ON handoff_records(conversation_id);
+"""
+
+CREATE_AGENT_RUNS_TABLE = """
+CREATE TABLE IF NOT EXISTS agent_runs (
+    run_id           VARCHAR(36) PRIMARY KEY,
+    conversation_id  VARCHAR(36) NOT NULL REFERENCES conversations(conversation_id),
+    intent           VARCHAR(32),
+    workflow         VARCHAR(32),
+    response_type    VARCHAR(32),
+    total_steps      INTEGER,
+    latency_ms       INTEGER,
+    status           VARCHAR(16) NOT NULL DEFAULT 'ok',
+    created_at       TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_TOOL_CALLS_TABLE = """
+CREATE TABLE IF NOT EXISTS tool_calls (
+    call_id         VARCHAR(36) PRIMARY KEY,
+    run_id          VARCHAR(36) NOT NULL REFERENCES agent_runs(run_id),
+    tool_name       VARCHAR(64) NOT NULL,
+    input_summary   TEXT,
+    output_summary  TEXT,
+    status          VARCHAR(16) NOT NULL DEFAULT 'ok',
+    latency_ms      INTEGER,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_RISK_EVENTS_TABLE = """
+CREATE TABLE IF NOT EXISTS risk_events (
+    event_id        VARCHAR(36) PRIMARY KEY,
+    conversation_id VARCHAR(36) REFERENCES conversations(conversation_id),
+    event_type      VARCHAR(32) NOT NULL,
+    severity        VARCHAR(16) NOT NULL DEFAULT 'medium',
+    summary         TEXT NOT NULL,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_HANDOFF_RECORDS_TABLE = """
+CREATE TABLE IF NOT EXISTS handoff_records (
+    record_id        VARCHAR(36) PRIMARY KEY,
+    conversation_id  VARCHAR(36) NOT NULL REFERENCES conversations(conversation_id),
+    user_id          VARCHAR(128) NOT NULL,
+    reason           TEXT NOT NULL,
+    product_model    VARCHAR(32),
+    facts            JSONB DEFAULT '[]',
+    steps_taken      JSONB DEFAULT '[]',
+    remaining        TEXT,
+    created_at       TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_EVALUATION_CASES_TABLE = """
+CREATE TABLE IF NOT EXISTS evaluation_cases (
+    case_id                 VARCHAR(32) PRIMARY KEY,
+    category                VARCHAR(64) NOT NULL,
+    input_text              TEXT NOT NULL,
+    expected_response_type  VARCHAR(32) NOT NULL,
+    required_source_ids     JSONB DEFAULT '[]',
+    required_content_kw     JSONB DEFAULT '[]',
+    description             TEXT,
+    enabled                 BOOLEAN DEFAULT TRUE,
+    created_at              TIMESTAMP DEFAULT NOW()
+);
+"""
+
+CREATE_EVALUATION_RUNS_TABLE = """
+CREATE TABLE IF NOT EXISTS evaluation_runs (
+    eval_run_id     VARCHAR(36) PRIMARY KEY,
+    case_id         VARCHAR(32) NOT NULL REFERENCES evaluation_cases(case_id),
+    actual_type     VARCHAR(32),
+    passed          BOOLEAN NOT NULL,
+    failure_reason  TEXT,
+    model_version   VARCHAR(64),
+    latency_ms      INTEGER,
+    created_at      TIMESTAMP DEFAULT NOW()
+);
 """
 
 INSERT_CONVERSATION = """
@@ -139,8 +223,14 @@ WHERE user_id = %s AND status = 'active'
 ORDER BY updated_at DESC;
 """
 
+SELECT_ALL_CONVERSATIONS = """
+SELECT conversation_id, user_id, title, status, created_at, updated_at
+FROM conversations
+ORDER BY updated_at DESC;
+"""
+
 SELECT_ACTIVE_MOCK_CUSTOMER = """
-SELECT user_id, display_name, status
+SELECT user_id, display_name, role, status
 FROM mock_customers
 WHERE user_id = %s AND status = 'active';
 """
@@ -182,10 +272,10 @@ DELETE FROM conversations WHERE conversation_id = %s;
 """
 
 UPSERT_MOCK_CUSTOMER = """
-INSERT INTO mock_customers (user_id, display_name, status)
-VALUES (%s, %s, %s)
+INSERT INTO mock_customers (user_id, display_name, role, status)
+VALUES (%s, %s, %s, %s)
 ON CONFLICT (user_id) DO UPDATE
-SET display_name = EXCLUDED.display_name, status = EXCLUDED.status;
+SET display_name = EXCLUDED.display_name, role = EXCLUDED.role, status = EXCLUDED.status;
 """
 
 UPSERT_PRODUCT = """
@@ -245,6 +335,59 @@ SET status = 'executed', executed_ticket_id = %s, updated_at = NOW()
 WHERE action_id = %s AND status = 'pending';
 """
 
+INSERT_AGENT_RUN = """
+INSERT INTO agent_runs (run_id, conversation_id, intent, workflow, response_type, total_steps, latency_ms, status)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+"""
+
+INSERT_TOOL_CALL = """
+INSERT INTO tool_calls (call_id, run_id, tool_name, input_summary, output_summary, status, latency_ms)
+VALUES (%s, %s, %s, %s, %s, %s, %s);
+"""
+
+INSERT_RISK_EVENT = """
+INSERT INTO risk_events (event_id, conversation_id, event_type, severity, summary)
+VALUES (%s, %s, %s, %s, %s);
+"""
+
+INSERT_HANDOFF_RECORD = """
+INSERT INTO handoff_records (record_id, conversation_id, user_id, reason, product_model, facts, steps_taken, remaining)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+"""
+
+SELECT_AGENT_RUNS_BY_CONVERSATION = """
+SELECT run_id, conversation_id, intent, workflow, response_type, total_steps, latency_ms, status, created_at
+FROM agent_runs
+WHERE conversation_id = %s
+ORDER BY created_at ASC;
+"""
+
+SELECT_TOOL_CALLS_BY_RUN = """
+SELECT call_id, run_id, tool_name, input_summary, output_summary, status, latency_ms, created_at
+FROM tool_calls
+WHERE run_id = %s
+ORDER BY created_at ASC;
+"""
+
+SELECT_HANDOFF_RECORDS_BY_CONVERSATION = """
+SELECT record_id, conversation_id, user_id, reason, product_model, facts, steps_taken, remaining, created_at
+FROM handoff_records
+WHERE conversation_id = %s
+ORDER BY created_at ASC;
+"""
+
+INSERT_EVALUATION_RUN = """
+INSERT INTO evaluation_runs (eval_run_id, case_id, actual_type, passed, failure_reason, model_version, latency_ms)
+VALUES (%s, %s, %s, %s, %s, %s, %s);
+"""
+
+SELECT_EVALUATION_RUNS = """
+SELECT eval_run_id, case_id, actual_type, passed, failure_reason, model_version, latency_ms, created_at
+FROM evaluation_runs
+WHERE (%s IS NULL OR case_id = %s)
+ORDER BY created_at DESC;
+"""
+
 
 def init_tables(db_manager):
     db_manager.execute(CREATE_CONVERSATIONS_TABLE)
@@ -254,4 +397,14 @@ def init_tables(db_manager):
     db_manager.execute(CREATE_MOCK_ORDERS_TABLE)
     db_manager.execute(CREATE_PENDING_ACTIONS_TABLE)
     db_manager.execute(CREATE_SERVICE_TICKETS_TABLE)
+    db_manager.execute(CREATE_AGENT_RUNS_TABLE)
+    db_manager.execute(CREATE_TOOL_CALLS_TABLE)
+    db_manager.execute(CREATE_RISK_EVENTS_TABLE)
+    db_manager.execute(CREATE_HANDOFF_RECORDS_TABLE)
+    db_manager.execute(CREATE_EVALUATION_CASES_TABLE)
+    db_manager.execute(CREATE_EVALUATION_RUNS_TABLE)
     db_manager.execute(CREATE_INDEXES)
+    db_manager.execute(
+        "ALTER TABLE mock_customers ADD COLUMN IF NOT EXISTS "
+        "role VARCHAR(16) NOT NULL DEFAULT 'customer';"
+    )

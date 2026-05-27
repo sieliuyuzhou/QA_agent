@@ -111,3 +111,13 @@ class TicketRepository:
             raise
         finally:
             self.db.return_connection(conn)
+
+    def get_ticket(self, user_id: str, ticket_id: str):
+        row = self.db.execute_one(
+            SELECT_SERVICE_TICKET_BY_ID_AND_USER,
+            (ticket_id, user_id),
+            fetch=True,
+        )
+        if row is None:
+            return None
+        return _to_service_ticket(row)
