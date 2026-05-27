@@ -11,6 +11,7 @@ from .ticketing import (
     TicketEligibilityConflict,
     TicketNotFound,
 )
+from .workflows import AfterSalesWorkflow, WorkflowResult
 
 __all__ = [
     "AgentResponse",
@@ -27,4 +28,6 @@ __all__ = [
     "TicketActionService",
     "TicketEligibilityConflict",
     "TicketNotFound",
+    "AfterSalesWorkflow",
+    "WorkflowResult",
 ]

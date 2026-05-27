@@ -11,6 +11,7 @@ from .schemas import (
     ConversationListResponse,
     ConversationListItem,
     MessageItem,
+    PendingActionItem,
 )
 
 router = APIRouter(tags=["customer_service"])
@@ -47,7 +48,9 @@ async def chat(
         raise HTTPException(status_code=400, detail="会话已关闭")
     
     try:
-        response = agent.run(body.message, conversation_id)
+        response = agent.run(
+            body.message, conversation_id, current_user=current_user
+        )
         return ChatResponse(
             type=response.type,
             content=response.content,
@@ -61,6 +64,16 @@ async def chat(
                 )
                 for item in response.citations
             ],
+            pending_action=(
+                PendingActionItem(
+                    action_id=response.pending_action.action_id,
+                    action_type=response.pending_action.action_type,
+                    display_summary=response.pending_action.display_summary,
+                    expires_at=response.pending_action.expires_at.isoformat(),
+                )
+                if response.pending_action
+                else None
+            ),
             metadata=response.metadata,
         )
     except Exception as e:

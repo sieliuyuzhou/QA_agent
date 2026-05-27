@@ -29,6 +29,13 @@ class CitationItem(BaseModel):
     excerpt: str = Field(..., description="支持回答的来源摘录")
 
 
+class PendingActionItem(BaseModel):
+    action_id: str
+    action_type: str
+    display_summary: str
+    expires_at: str
+
+
 class ChatResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
@@ -42,12 +49,13 @@ class ChatResponse(BaseModel):
         }
     )
     
-    type: Literal["final_answer", "ask_user", "handoff"] = Field(
-        ..., description="响应类型：最终回答、澄清问题或人工转接"
+    type: Literal["final_answer", "ask_user", "confirm_action", "handoff"] = Field(
+        ..., description="响应类型：最终回答、澄清问题、待确认动作或人工转接"
     )
     content: str = Field(..., description="响应内容")
     conversation_id: str = Field(..., description="会话ID")
     citations: List[CitationItem] = Field(default_factory=list, description="知识来源引用")
+    pending_action: Optional[PendingActionItem] = None
     metadata: Optional[dict] = Field(default=None, description="Agent 执行元数据")
 
 
@@ -72,13 +80,6 @@ class CreateTicketActionRequest(BaseModel):
     issue_cause: Literal["non_human_fault", "human_damage", "unknown"]
     packaging_intact: Optional[bool] = None
     issue_summary: str = Field(..., min_length=1)
-
-
-class PendingActionItem(BaseModel):
-    action_id: str
-    action_type: str
-    display_summary: str
-    expires_at: str
 
 
 class CreatePendingActionResponse(BaseModel):

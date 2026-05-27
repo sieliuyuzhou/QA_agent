@@ -9,9 +9,14 @@ load_dotenv()
 from llm import chat_service
 from infrastructure.rag import get_store
 from utils import ConversationManager, CustomerRepository, OrderRepository, TicketRepository
-from tools import search_faq_tool
+from tools import retrieve_policy, search_faq_tool
 from domain import CustomerServiceAgent
-from domain.customer_service import EligibilityRuleService, OrderQueryService, TicketActionService
+from domain.customer_service import (
+    AfterSalesWorkflow,
+    EligibilityRuleService,
+    OrderQueryService,
+    TicketActionService,
+)
 from apps.customer_service import action_router, order_router, router
 
 
@@ -31,23 +36,29 @@ async def lifespan(app: FastAPI):
         max_context_turns=max_context_turns,
     )
     
+    order_service = OrderQueryService(
+        OrderRepository(conversation_manager.db)
+    )
+    ticket_action_service = TicketActionService(
+        TicketRepository(conversation_manager.db),
+        order_service,
+        EligibilityRuleService(),
+    )
+    after_sales_workflow = AfterSalesWorkflow(
+        ticket_action_service, retrieve_policy
+    )
     agent = CustomerServiceAgent(
         llm=chat_service,
         conversation_manager=conversation_manager,
         tools=[search_faq_tool],
+        after_sales_workflow=after_sales_workflow,
         max_steps=5,
     )
     
     app.state.conversation_manager = conversation_manager
     app.state.customer_repository = CustomerRepository(conversation_manager.db)
-    app.state.order_service = OrderQueryService(
-        OrderRepository(conversation_manager.db)
-    )
-    app.state.ticket_action_service = TicketActionService(
-        TicketRepository(conversation_manager.db),
-        app.state.order_service,
-        EligibilityRuleService(),
-    )
+    app.state.order_service = order_service
+    app.state.ticket_action_service = ticket_action_service
     app.state.agent = agent
     
     yield

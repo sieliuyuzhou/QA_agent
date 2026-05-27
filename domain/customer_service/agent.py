@@ -14,6 +14,7 @@ class AgentResponse:
     conversation_id: str
     metadata: Optional[dict] = None
     citations: list = field(default_factory=list)
+    pending_action: Any = None
 
 
 class CustomerServiceAgent:
@@ -24,12 +25,14 @@ class CustomerServiceAgent:
         tools: list,
         system_prompt: Optional[str] = None,
         max_steps: int = 5,
+        after_sales_workflow=None,
     ):
         self.llm = llm
         self.conversation_manager = conversation_manager
         self.tools = tools
         self.system_prompt = system_prompt
         self.max_steps = max_steps
+        self.after_sales_workflow = after_sales_workflow
         self._tools_map = {tool.name: tool for tool in tools}
 
     def _find_tool(self, name: str):
@@ -136,7 +139,13 @@ class CustomerServiceAgent:
         except Exception as e:
             return f"工具执行错误：{e}"
 
-    def run(self, user_input: str, conversation_id: str, verbose: bool = False) -> AgentResponse:
+    def run(
+        self,
+        user_input: str,
+        conversation_id: str,
+        verbose: bool = False,
+        current_user=None,
+    ) -> AgentResponse:
         self.conversation_manager.add_message(
             conversation_id, "user", user_input
         )
@@ -199,6 +208,61 @@ class CustomerServiceAgent:
             
             action_name = parsed["action_name"]
             action_input = parsed["action_input"]
+
+            if action_name == "PrepareAfterSales":
+                if not self.after_sales_workflow or current_user is None:
+                    response_type = "handoff"
+                    content = "当前无法安全处理售后申请，已为您转接人工进一步确认。"
+                    workflow_metadata = {}
+                    workflow_citations = []
+                    pending_action = None
+                else:
+                    try:
+                        payload = json.loads(action_input)
+                    except json.JSONDecodeError:
+                        payload = None
+                    if not isinstance(payload, dict):
+                        response_type = "ask_user"
+                        content = "请提供订单号和售后办理信息，以便继续处理。"
+                        workflow_metadata = {
+                            "intent": "after_sales",
+                            "workflow": "after_sales",
+                        }
+                        workflow_citations = []
+                        pending_action = None
+                    else:
+                        result = self.after_sales_workflow.prepare(
+                            current_user, conversation_id, payload
+                        )
+                        response_type = result.response_type
+                        content = result.content
+                        workflow_metadata = result.metadata
+                        workflow_citations = result.citations
+                        pending_action = result.pending_action
+                states = {
+                    "final_answer": "active",
+                    "ask_user": "awaiting_clarification",
+                    "confirm_action": "awaiting_confirmation",
+                    "handoff": "handoff_requested",
+                }
+                self.conversation_manager.add_message(
+                    conversation_id,
+                    "assistant",
+                    content,
+                    metadata={
+                        "action_type": response_type,
+                        "conversation_state": states[response_type],
+                        **workflow_metadata,
+                    },
+                )
+                return AgentResponse(
+                    type=response_type,
+                    content=content,
+                    conversation_id=conversation_id,
+                    metadata={"total_steps": step + 1, **workflow_metadata},
+                    citations=workflow_citations,
+                    pending_action=pending_action,
+                )
             
             terminal_actions = {
                 "Finish": "final_answer",

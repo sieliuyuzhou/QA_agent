@@ -67,8 +67,8 @@ class FakeAgent:
     def __init__(self):
         self.calls = []
 
-    def run(self, message, conversation_id):
-        self.calls.append((message, conversation_id))
+    def run(self, message, conversation_id, current_user=None):
+        self.calls.append((message, conversation_id, current_user))
         return AgentResponse("final_answer", "ok", conversation_id)
 
 
