@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 首批身份隔离与订单只读切片已验证，待设计售后规则与受控工具接入 |
+| 当前执行阶段 | Phase 1 售后政策、资格规则与授权工具切片规格待复核 |
 
 ## 1. 使用规则
 
@@ -64,6 +64,7 @@
 | `DOC-007` | `P0` | 统一项目展示名称为 `QA-agent` | `DOC-006` | `✅ DONE` | README、方案和台账使用确认后的展示名称 | 技术路径/标识保留运行所需形式 |
 | `DOC-008` | `P0` | 编写 Phase 1 首批身份与订单读取设计规格 | `M1` | `✅ DONE` | 范围、授权边界、数据/API 和测试契约明确 | 2026-05-26 用户确认规格 |
 | `DOC-009` | `P0` | 编写 Phase 1 首批详细实施计划 | `DOC-008` | `✅ DONE` | 计划拆解到文件、测试、验证和提交批次 | `docs/superpowers/plans/2026-05-26-phase-1-identity-order-read.md` |
+| `DOC-010` | `P0` | 编写 Phase 1 售后政策、资格规则与授权工具设计规格 | `P1-001` 至 `P1-003` | `REVIEW` | 政策、授权工具、确定性规则和测试边界明确并经落盘复核 | `docs/superpowers/specs/2026-05-27-phase-1-policy-eligibility-tools-design.md` |
 
 ## 4. Phase 0：工程基线与能力补齐
 
@@ -180,6 +181,8 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `OBS-002` | 现状 | 配置、Docker 端口及导入脚本追踪存在复现差异 | `P0-001` 至 `P0-004` | 待实施 |
 | 2026-05-26 | `OPEN-001` | 待决策 | 一期是否在业务开发前迁移向量存储至 `pgvector` | `P0-005`, `P0-006` | 已由 `DEC-005` 关闭 |
 | 2026-05-26 | `DEC-005` | 决策 | Phase 0 与 Phase 1 继续使用 Chroma；`pgvector` 迁移在 MVP 流程稳定后单独评估 | `P0-005`, `Phase 1` | 已确认 |
+| 2026-05-27 | `DEC-006` | 决策 | 下一切片限定为政策检索、授权订单工具和确定性资格规则；暂不实施工单写操作或流程编排 | `P1-006` 至 `P1-009`, `P1-012` | 已确认 |
+| 2026-05-27 | `DEC-007` | 决策 | 资格日期边界采用自然日 `0-7` 天退换、`8-365` 天免费保修、`>365` 天仅表示可进入付费维修路径 | `P1-008` | 已确认 |
 
 ## 9. 进度更新日志
 
@@ -203,10 +206,11 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P1-002` | `pytest tests\test_identity_and_conversations.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（13 passed） | 会话创建和查询不再接受调用方选择用户；越权读取/续接统一返回 `404` | 建立授权订单只读 API 底座 |
 | 2026-05-26 | `P1-006`（底座部分） | `pytest tests\test_mock_data.py tests\test_orders_api.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（26 passed） | 已提供按当前身份过滤的订单 Service/API；不提前将订单查询注册为 Agent Tool | 执行本地 schema/seed 与完整回归验证 |
 | 2026-05-26 | Phase 1 首批切片验收 | `pytest -q --basetemp=.pytest_cache\tmp` 通过（28 passed）；`scripts\verify_migration.py` 通过；`scripts\init_db.py` 与 `scripts\seed_mock_data.py` 成功；本地 API 验证 Alice 仅可读取 `ORD-A-X1`/`ORD-A-C1` 且读取 `ORD-B-X2` 返回 `404` | `P1-001`、`P1-002`、`P1-003` 已关闭；`P1-006` 待受控 `MockOrderTool` 接入 | 设计并实施售后资格规则与订单工具接入 |
+| 2026-05-27 | `DOC-010`（规格待复核） | 用户已确认本切片架构、规则契约和错误处理；规格已落盘待复核 | 范围限制为只读政策/订单依据与确定性规则；过保结论修订为 `paid_repair_available` | 复核规格后编写详细实施计划并执行 `P1-006`、`P1-007`、`P1-008` |
 
 ## 10. 当前待办焦点
 
 当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
 
-1. 为 `P1-007`、`P1-008` 与 `P1-006` 编写下一切片设计：政策分类、确定性售后资格规则与受控订单工具接入。
+1. 复核 `docs/superpowers/specs/2026-05-27-phase-1-policy-eligibility-tools-design.md`，随后为 `P1-006`、`P1-007`、`P1-008` 编写详细实施计划。
 2. 在售后规则和工具协议通过验收前，不引入工单写操作、Supervisor/子 Agent 编排或真实企业系统集成。
