@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 待确认动作与模拟工单写入切片已验证 |
+| 当前执行阶段 | Phase 1 售后 Workflow 与对话接入切片实施中 |
 
 ## 1. 使用规则
 
@@ -68,6 +68,8 @@
 | `DOC-011` | `P0` | 编写 Phase 1 售后政策、资格规则与授权工具实施计划 | `DOC-010` | `✅ DONE` | 计划拆解到文件、测试、验证与台账收口步骤 | `docs/superpowers/plans/2026-05-27-phase-1-policy-eligibility-tools.md` |
 | `DOC-012` | `P0` | 编写 Phase 1 待确认动作与模拟工单写入设计规格 | `P1-006` 至 `P1-008` | `✅ DONE` | 会话绑定、确认重算、事务幂等和接口边界明确并经落盘复核 | 2026-05-27 用户授权按方案自主实施 |
 | `DOC-013` | `P0` | 编写 Phase 1 待确认动作与模拟工单写入实施计划 | `DOC-012` | `✅ DONE` | 计划拆解到 schema、服务、API、测试和本地幂等验证 | `docs/superpowers/plans/2026-05-27-phase-1-confirmed-ticket-write.md` |
+| `DOC-014` | `P0` | 编写 Phase 1 售后 Workflow 与对话接入设计规格 | `P1-004`, `P1-009` | `✅ DONE` | 单 Agent 流程边界、政策依据门禁、对话协议和确认复用路径明确 | `docs/superpowers/specs/2026-05-27-phase-1-after-sales-workflow-design.md` |
+| `DOC-015` | `P0` | 编写 Phase 1 售后 Workflow 与对话接入实施计划 | `DOC-014` | `✅ DONE` | 计划拆解到 workflow、Agent 协议、API、测试和数据库验证 | `docs/superpowers/plans/2026-05-27-phase-1-after-sales-workflow.md` |
 
 ## 4. Phase 0：工程基线与能力补齐
 
@@ -129,10 +131,10 @@
 
 | ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `P1-012` | `P0` | 建立 Supervisor 意图路由与 Workflow 接口 | `M1`, `P1-007` | `PENDING` | 能区分咨询、排障、售后、转人工 | 一期仍可为单 Agent 内部流程 |
+| `P1-012` | `P0` | 建立 Supervisor 意图路由与 Workflow 接口 | `M1`, `P1-007` | `IN_PROGRESS` | 能区分咨询、排障、售后、转人工 | 正在以单 Agent 受控 `PrepareAfterSales` 动作接入售后 Workflow |
 | `P1-013` | `P0` | 实现产品咨询闭环 | `P1-007`, `P1-012` | `PENDING` | 产品/政策问题回答带引用且满足评测 | Consultation |
 | `P1-014` | `P0` | 实现故障排查槽位收集与流程 | `P1-012` | `PENDING` | 型号缺失会澄清；充分后返回排障步骤 | Diagnosis |
-| `P1-015` | `P0` | 实现模拟售后办理流程 | `P1-006`, `P1-008`, `P1-009`, `P1-012` | `PENDING` | 查询订单、判资格、确认、建单全链路通过 | AfterSales |
+| `P1-015` | `P0` | 实现模拟售后办理流程 | `P1-006`, `P1-008`, `P1-009`, `P1-012` | `IN_PROGRESS` | 查询订单、判资格、确认、建单全链路通过 | 正在将已验证服务接入 `/api/chat` 售后流程 |
 | `P1-016` | `P1` | 实现转人工触发策略和用户响应 | `P1-011`, `P1-012` | `PENDING` | 明确请求/低依据/故障时返回 `handoff` | Handoff |
 | `P1-017` | `P1` | 扩展 API 协议与用户侧接口 | `P1-013` 至 `P1-016` | `PENDING` | Chat/确认/转人工/订单/工单接口可用 | 含权限校验 |
 
@@ -219,10 +221,11 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-27 | `DOC-012`（规格待复核） | 用户已确认待确认动作、模拟工单、事务幂等与确认 API 设计；规格已落盘待复核 | 动作绑定当前用户与当前会话；确认时重新运行资格规则；不接入聊天 Workflow | 复核规格后编写详细实施计划并执行 `P1-004`、`P1-009` |
 | 2026-05-27 | `DOC-012`, `DOC-013` | 用户授权在已掌握总体方案后由实现方自行细化并推进；写入切片实施计划已落盘 | 当前数据库封装每次调用独立提交，确认建单将由专用仓储事务锁定动作并回填工单；替代建议不自动变成写动作 | 按 TDD 执行 `P1-004` 与 `P1-009` |
 | 2026-05-27 | `P1-004`, `P1-009` | 新测试先取得模块/路由缺失及单时钟快照边界的 RED 证据；随后 `pytest -q --basetemp=.pytest_cache\ticket_full_final` 通过（63 passed）；`scripts\init_db.py` 与 `scripts\seed_mock_data.py` 成功；真实 PostgreSQL 确认两次仅创建一张工单且第二次返回幂等重放 | 动作及执行均绑定当前用户/会话；确认时事务锁定并重新校验资格；替代建议不得自动转成写动作；本切片仍不接入 Agent 自动执行 | 设计并实施 `P1-012` 与 `P1-015` 售后流程编排 |
+| 2026-05-27 | `DOC-014`, `DOC-015` | 用户已授权按总体方案自主推进；售后 Workflow 规格与实施计划已落盘，实施前基线 `pytest -q --basetemp=.pytest_cache\workflow_baseline` 通过（63 passed） | 本轮在现有单 Agent 中增加受控 `PrepareAfterSales` 流程动作；政策无依据不生成待确认动作；确认建单仍使用既有事务端点 | 按 TDD 实施 `P1-012` 与 `P1-015` |
 
 ## 10. 当前待办焦点
 
 当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
 
-1. 基于已验证的政策、订单、资格与确认写入能力，设计并实施 `P1-012` 与 `P1-015` 售后流程编排。
+1. 按 `docs/superpowers/plans/2026-05-27-phase-1-after-sales-workflow.md` 实施 `P1-012` 与 `P1-015` 售后流程编排并完成验证。
 2. 在流程编排完成验收前，不引入 Supervisor/子 Agent 拆分或真实企业系统集成。
