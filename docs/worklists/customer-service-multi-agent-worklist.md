@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 1 售后政策、资格规则与授权工具切片规格待复核 |
+| 当前执行阶段 | Phase 1 售后政策、资格规则与授权工具切片实施中 |
 
 ## 1. 使用规则
 
@@ -64,7 +64,8 @@
 | `DOC-007` | `P0` | 统一项目展示名称为 `QA-agent` | `DOC-006` | `✅ DONE` | README、方案和台账使用确认后的展示名称 | 技术路径/标识保留运行所需形式 |
 | `DOC-008` | `P0` | 编写 Phase 1 首批身份与订单读取设计规格 | `M1` | `✅ DONE` | 范围、授权边界、数据/API 和测试契约明确 | 2026-05-26 用户确认规格 |
 | `DOC-009` | `P0` | 编写 Phase 1 首批详细实施计划 | `DOC-008` | `✅ DONE` | 计划拆解到文件、测试、验证和提交批次 | `docs/superpowers/plans/2026-05-26-phase-1-identity-order-read.md` |
-| `DOC-010` | `P0` | 编写 Phase 1 售后政策、资格规则与授权工具设计规格 | `P1-001` 至 `P1-003` | `REVIEW` | 政策、授权工具、确定性规则和测试边界明确并经落盘复核 | `docs/superpowers/specs/2026-05-27-phase-1-policy-eligibility-tools-design.md` |
+| `DOC-010` | `P0` | 编写 Phase 1 售后政策、资格规则与授权工具设计规格 | `P1-001` 至 `P1-003` | `✅ DONE` | 政策、授权工具、确定性规则和测试边界明确并经落盘复核 | 2026-05-27 用户确认规格 |
+| `DOC-011` | `P0` | 编写 Phase 1 售后政策、资格规则与授权工具实施计划 | `DOC-010` | `✅ DONE` | 计划拆解到文件、测试、验证与台账收口步骤 | `docs/superpowers/plans/2026-05-27-phase-1-policy-eligibility-tools.md` |
 
 ## 4. Phase 0：工程基线与能力补齐
 
@@ -207,10 +208,11 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-26 | `P1-006`（底座部分） | `pytest tests\test_mock_data.py tests\test_orders_api.py tests\test_identity_and_conversations.py tests\test_health_and_initialization.py tests\test_agent_actions.py tests\test_agent_citations.py -q --basetemp=.pytest_cache\tmp` 通过（26 passed） | 已提供按当前身份过滤的订单 Service/API；不提前将订单查询注册为 Agent Tool | 执行本地 schema/seed 与完整回归验证 |
 | 2026-05-26 | Phase 1 首批切片验收 | `pytest -q --basetemp=.pytest_cache\tmp` 通过（28 passed）；`scripts\verify_migration.py` 通过；`scripts\init_db.py` 与 `scripts\seed_mock_data.py` 成功；本地 API 验证 Alice 仅可读取 `ORD-A-X1`/`ORD-A-C1` 且读取 `ORD-B-X2` 返回 `404` | `P1-001`、`P1-002`、`P1-003` 已关闭；`P1-006` 待受控 `MockOrderTool` 接入 | 设计并实施售后资格规则与订单工具接入 |
 | 2026-05-27 | `DOC-010`（规格待复核） | 用户已确认本切片架构、规则契约和错误处理；规格已落盘待复核 | 范围限制为只读政策/订单依据与确定性规则；过保结论修订为 `paid_repair_available` | 复核规格后编写详细实施计划并执行 `P1-006`、`P1-007`、`P1-008` |
+| 2026-05-27 | `DOC-010`, `DOC-011` | 用户已复核售后规则与授权工具规格；实施计划已按 TDD 和离线验证步骤拆解 | 来源标识采用现有导入契约 `Doc5-售后与保修政策`；不注册未编排工具到通用 Agent | 执行 `P1-006`、`P1-007`、`P1-008` 并记录验证证据 |
 
 ## 10. 当前待办焦点
 
 当前仅应推进以下顺序，避免未确认情况下跨阶段实施：
 
-1. 复核 `docs/superpowers/specs/2026-05-27-phase-1-policy-eligibility-tools-design.md`，随后为 `P1-006`、`P1-007`、`P1-008` 编写详细实施计划。
+1. 按 `docs/superpowers/plans/2026-05-27-phase-1-policy-eligibility-tools.md` 执行 `P1-006`、`P1-007`、`P1-008`，验证通过后更新任务状态。
 2. 在售后规则和工具协议通过验收前，不引入工单写操作、Supervisor/子 Agent 编排或真实企业系统集成。

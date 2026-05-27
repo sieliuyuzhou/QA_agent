@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 状态 | 待落盘复核 |
+| 状态 | 已确认 |
 | 日期 | 2026-05-27 |
 | 展示名称 | `QA-agent` |
 | 实际仓库路径 | `E:\myProgram\QA_agent` |
@@ -82,7 +82,7 @@ ToolResult(
     content="...",
     citations=[
         Citation(
-            source_id="doc5-after-sales-policy",
+            source_id="Doc5-售后与保修政策",
             title="Doc5-售后与保修政策",
             section="保修条款",
             excerpt="...",
