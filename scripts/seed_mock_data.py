@@ -30,6 +30,7 @@ PRODUCTS = [
 ORDERS = [
     ("ORD-A-X1", "customer_alice", "X1", "2026-05-22", "delivered", "1299.00"),
     ("ORD-A-C1", "customer_alice", "C1", "2026-03-01", "completed", "399.00"),
+    ("ORD-A-G2-OLD", "customer_alice", "G2", "2025-01-01", "completed", "299.00"),
     ("ORD-B-X2", "customer_bob", "X2", "2026-05-20", "delivered", "1599.00"),
     ("ORD-B-G2", "customer_bob", "G2", "2025-10-10", "completed", "299.00"),
 ]

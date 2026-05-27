@@ -104,13 +104,17 @@ class VectorStore:
         self,
         query: str,
         top_k: int = 5,
+        source_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         try:
             query_embedding = self.embedding_service.embed(query)
-            results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=top_k,
-            )
+            query_args = {
+                "query_embeddings": [query_embedding],
+                "n_results": top_k,
+            }
+            if source_id is not None:
+                query_args["where"] = {"source_id": source_id}
+            results = self.collection.query(**query_args)
 
             search_results = []
             if results["ids"] and results["ids"][0]:

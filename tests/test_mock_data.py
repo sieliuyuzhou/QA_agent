@@ -46,6 +46,12 @@ def test_seed_data_has_two_customers_and_all_supported_products():
     }
 
 
+def test_seed_data_includes_over_warranty_order():
+    seed_module = _load_seed_module()
+
+    assert any(row[3] == "2025-01-01" for row in seed_module.ORDERS)
+
+
 def test_seed_mock_data_uses_idempotent_inserts():
     seed_module = _load_seed_module()
     db = CaptureDB()
