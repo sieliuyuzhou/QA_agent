@@ -726,6 +726,30 @@ Phase 2 出口：
 - 两个领域 Agent 独立可测、行为可审计。
 - Supervisor 仅负责路由、汇总和全局对话控制。
 
+### 14.3.1 Phase 2.5：LangGraph 框架迁移
+
+目标：用 LangGraph StateGraph 替换自研 ReAct 循环，用 LangChain 原生 tool_calls 替换正则文本解析，引入 Checkpointer 实现会话持久化。
+
+范围：
+
+1. 添加 LangGraph/LangChain 依赖，创建 LLM 适配层（`BaseChatModel` 包装 `ChatService`）。
+2. 创建 Tool 转换层（`Tool` → `StructuredTool`）。
+3. 用 StateGraph 替换 `BaseReActAgent` 自研循环（`agent ⇄ tools` 条件边循环）。
+4. Supervisor 使用 LangChain 原生 tool calling 替换正则路由。
+5. 注入 Checkpointer，支持会话持久化（开发阶段 MemorySaver，生产 PostgresSaver）。
+6. 迁移测试并全量回归验证。
+
+影响范围：`BaseReActAgent`、`TroubleshootingAgent`、`Supervisor`。`AfterSalesAgent`（确定性管道）和 `ConsultationHandler`（无 LLM 循环）不做迁移。
+
+Phase 2.5 出口：
+
+- LLM 适配层和工具转换层通过单元测试。
+- StateGraph 替换后，单轮/多轮对话行为与替换前一致。
+- Supervisor 路由正确走 tool_calls 而非正则解析。
+- 全量回归测试通过（≥165 passed）。
+
+详细实施指南见 `docs/solution/langgraph_upgrade_plan.md`。
+
 ### 14.4 Phase 3：企业级治理与真实接入
 
 目标：进入真实业务集成与持续运营阶段。
@@ -780,6 +804,7 @@ Phase 3 出口：
 | 工单创建 | 用户确认后执行 | 保护写操作和用户权益 |
 | 向量存储 | 一期可暂留 Chroma，Phase 0 决策 pgvector 迁移时点 | 控制一期复杂度，同时保留企业部署方向 |
 | 业务轨迹 | 保存调用和结论，不保存思维链 | 满足审计与安全要求 |
+| 多智能体框架 | 选择 LangGraph，用 StateGraph + LangChain 原生 tool_calls 替换自研 ReAct 循环（正则文本解析） | 协议原生工具调用保证正确性，框架管状态管理，社区认可度高，LangSmith 可视化追踪 |
 
 ## 18. 后续执行方式
 

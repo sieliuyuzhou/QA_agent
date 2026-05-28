@@ -8,7 +8,7 @@
 | 对应方案 | `docs/solution/customer-service-multi-agent-solution.md` |
 | 第一阶段目标 | 内部试用级客服 MVP |
 | 长期目标 | 企业级多智能体客服平台 |
-| 当前执行阶段 | Phase 2 完成，M3 已关闭，待 Phase 3 启动确认 |
+| 当前执行阶段 | Phase 2.5 完成，M2.5 已关闭，待 Phase 3 启动确认 |
 
 ## 1. 使用规则
 
@@ -49,6 +49,7 @@
 | `M1` Phase 0 工程基线 | 现有原型稳定、能力声明真实 | `✅ DONE` | 配置/测试/AskUser/引用/健康检查基线通过 |
 | `M2` Phase 1 内部试用 MVP | 模拟售后闭环可用 | `✅ DONE` | 咨询、排障、办理、确认、转人工、审计验收通过 |
 | `M3` Phase 2 多智能体 | 领域子 Agent 协同运行 | `✅ DONE` | Supervisor 与两个子 Agent 通过回归评测 |
+| `M2.5` Phase 2.5 LangGraph 框架迁移 | 自研 ReAct 循环替换为 LangGraph StateGraph | `✅ DONE` | LLM 适配层、工具转换、StateGraph 图、Supervisor 原生 tool calling、Checkpointer 全部通过回归评测 |
 | `M4` Phase 3 企业化 | 真实系统接入与治理 | `DEFERRED` | 企业发布门禁另行批准 |
 
 ## 3. 文档与规划任务
@@ -160,6 +161,21 @@
 | `P2-006` | `P1` | 建立拆分前后行为、延迟与成本对照评测 | `P2-005` | `✅ DONE` | 业务正确性不下降，成本可接受 | 5 项对照评测覆盖：产品咨询、无知识转人工、提示攻击、诊断、信息不足 |
 | `P2-007` | `P1` | 完成多智能体阶段验收 | `P2-001` 至 `P2-006` | `✅ DONE` | Supervisor + 两子 Agent 达到评测门禁 | 全量 165/165 passed；init_db/seed/verify_migration 全部 SUCCESS |
 
+## 6.5 Phase 2.5：LangGraph 框架迁移
+
+用 LangGraph StateGraph 替换自研 ReAct 循环（正则文本解析），用 LangChain 原生 tool_calls 替换正则文本约定。影响范围：`BaseReActAgent`、`TroubleshootingAgent`、`Supervisor`。`AfterSalesAgent`（确定性管道，无 LLM 循环）和 `ConsultationHandler`（无 LLM 循环）不做迁移。
+
+参考文档：`docs/solution/langgraph_upgrade_plan.md`（LangGraph 升级实施指南）
+
+| ID | 优先级 | 任务 | 依赖 | 状态 | 验收标准 | 备注 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `P2.5-001` | `P1` | 添加 LangGraph/LangChain 依赖，创建 LLM 适配层（`BaseChatModel` 包装 `ChatService`） | `M3` | `✅ DONE` | 适配层能正常调用并返回 LangChain 兼容响应 | `langgraph` 1.2.2、`langchain-core` 1.4.0、`langchain-openai` 1.2.2；`llm/langchain_adapter.py`（`ChatServiceLLM` + `_convert_message`）；11 项适配层测试通过；全量 176/176 passed |
+| `P2.5-002` | `P1` | 创建 Tool 转换层（`Tool` → `StructuredTool`） | `P2.5-001` | `✅ DONE` | 工具能成功转为 StructuredTool，`bind_tools` 后 LLM 能识别并调用 | `tools/langchain_convert.py`（`to_structured_tool` / `to_structured_tools`）；Pydantic `create_model` 动态生成参数 schema；6 项转换测试通过；全量 182/182 passed |
+| `P2.5-003` | `P1` | 用 StateGraph 替换 `BaseReActAgent` 自研 ReAct 循环 | `P2.5-001`, `P2.5-002` | `✅ DONE` | 单轮/多轮对话通过；旧版 AgentResponse 格式不变；旧版 `agent.py` 保留可回退 | `domain/customer_service/langgraph_agent.py`（`BaseLangGraphAgent`）；`agent ⇄ tools` 条件边循环 + `terminal` 终止节点；`_execute_tools` 自定义 tool node 保留 `ToolResult.citations`；6 项 LangGraph Agent 测试通过（含 citations 提取）；全量 188/188 passed |
+| `P2.5-004` | `P1` | Supervisor 使用 LangChain 原生 tool calling 替换正则路由 | `P2.5-001` | `✅ DONE` | 意图路由正确，`RouteConsultation`/`RouteTroubleshooting`/`RouteAfterSales`/`AskUser`/`Handoff` 全部走 tool_calls | `domain/customer_service/langgraph_supervisor.py`（`LangGraphSupervisor`）；`bind_tools` + 5 个路由 `StructuredTool`；`_dispatch` 直接解析 `tool_calls[0].name/args`；5 项 Supervisor 测试通过；全量 193/193 passed |
+| `P2.5-005` | `P1` | 注入 Checkpointer（MemorySaver 开发阶段），支持会话持久化 | `P2.5-003` | `✅ DONE` | 同一 conversation_id 多轮上下文保持连贯；服务重启后继续使用同个 conversation_id 上下文不丢失 | `MemorySaver` 默认注入 `_build_graph`；`run()` 使用 `thread_id=conversation_id` 配置；7 项 Agent 测试通过（含 `test_multiturn_same_conversation`）；全量 194/194 passed |
+| `P2.5-006` | `P1` | 迁移测试并全量回归验证 | `P2.5-001` 至 `P2.5-005` | `✅ DONE` | 全量回归测试通过（≥165 passed）；init_db/seed/verify_migration 全部 SUCCESS | 全量 194/194 passed；verify_migration SUCCESS；M2.5 验收 |
+
 ## 7. Phase 3：企业级能力规划
 
 Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务系统和合规要求明确后另行拆分审批。
@@ -193,6 +209,7 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-27 | `DEC-010` | 决策 | 规则给出的替代办理建议不得自动转换为另一类型的待确认写动作；办理类型变更需用户重新明确请求 | `P1-009` | 已确认 |
 | 2026-05-27 | `DEC-011` | 决策 | Phase 1 先在现有单 Agent 中以 `PrepareAfterSales` 接入售后 Workflow；模型只提供显式事实，政策依据、资格与工单确认继续由确定性服务控制 | `P1-012`, `P1-015`, `P1-017` | 已实施并验证 |
 | 2026-05-27 | `DEC-012` | 决策 | Phase 2 采用方案 B（领域 Agent 独立 ReAct 循环）：`TroubleshootingAgent` 和 `AfterSalesAgent` 各拥有独立 LLM 循环和工具白名单，Supervisor 仅负责路由和汇总；ConsultationHandler 和 HandoffWorkflow 保留为无循环 Workflow | `P2-001` 至 `P2-007` | 用户已确认 |
+| 2026-05-28 | `DEC-013` | 决策 | 多智能体框架选择 LangGraph：用 StateGraph 替换自研 ReAct 循环（正则文本解析），用 LangChain 原生 tool_calls 替换正则文本解析；影响范围为 BaseReActAgent、TroubleshootingAgent 和 Supervisor；AfterSalesAgent（确定性管道）和 ConsultationHandler（无 LLM 循环）不做迁移 | `P2.5-001` 至 `P2.5-006` | 用户已确认 |
 
 ## 9. 进度更新日志
 
@@ -231,18 +248,33 @@ Phase 3 任务当前作为长期路线登记，详细范围需要在真实业务
 | 2026-05-27 | `P1-022` M2 验收 | **全量回归 139/139 passed**；`init_db.py` / `seed_mock_data.py` / `verify_migration.py` 全部 SUCCESS；**§13.3 指标逐项验证：** ①知识问答引用正确率≥90%——12 项引用/咨询/政策测试全通过；②售后资格规则正确率 100%——12 项边界测试全通过；③未授权访问拦截率 100%——18 项权限隔离测试全通过；④未确认写操作拦截率 100%——11 项确认/幂等/过期测试全通过；⑤无依据乱答率≤5%——5 项空检索转人工测试全通过；⑥核心流程自动化测试——42 项 Agent/Workflow/Chat 测试全通过；⑦工具调用审计——8 项审计模型测试覆盖 agent_runs/tool_calls/risk_events/handoff_records；⑧转人工摘要——7 项 HandoffSummary 测试验证结构化摘要可用。API 端点全部就绪（用户侧 7 + 管理侧 4）。`M2` 里程碑关闭。验收记录：`docs/m2-acceptance-record.md` | 无 | Phase 1 完成；可进入 Phase 2 多智能体协作（`P2-001` 起） |
 | 2026-05-27 | Phase 2 设计规格 | 用户确认采用方案 B（领域 Agent 独立 ReAct 循环）；设计规格已落盘：`docs/superpowers/specs/2026-05-27-phase-2-multi-agent-design.md` | DEC-012：TroubleshootingAgent 和 AfterSalesAgent 各有独立 LLM 循环；ConsultationHandler 和 HandoffWorkflow 保留为无循环 Workflow；confirm_ticket 由 Supervisor/API 层处理确保确认在 Agent 循环之外 | 编写并执行 Phase 2 实施计划 |
 | 2026-05-27 | `P2-001` 至 `P2-007`、`M3` | TDD 实施：`SubAgentInput`/`SubAgentResponse` 协议（3 测试）→ `BaseReActAgent` 共享循环 → `TroubleshootingAgent`（4 测试）→ `AfterSalesAgent` 确定性管道（6 测试）→ `ToolRegistry`（4 测试）→ `ConsultationHandler` → `Supervisor` 意图路由（4 测试）→ 对照评测（5 测试）→ API 集成；**全量 165/165 passed**；`init_db.py` / `seed_mock_data.py` / `verify_migration.py` 全部 SUCCESS；`main.py` 已切换为 Supervisor 架构 | 新增文件：`sub_agent.py`、`base_agent.py`、`troubleshooting_agent.py`、`after_sales_agent.py`、`tool_registry.py`、`consultation_handler.py`、`supervisor.py`；旧 `agent.py` 保留不删除；AfterSalesAgent 使用确定性管道而非 LLM 循环 | `M3` 里程碑关闭；Phase 2 全部完成；可进入 Phase 3 |
+| 2026-05-28 | `DEC-013` | 用户确认用 LangGraph 替换自研 ReAct 循环；worklist 新增 Phase 2.5（P2.5-001 至 P2.5-006）和 M2.5 里程碑；solution 文档 §14.3.1 和 §17 已同步更新 | 影响范围：`BaseReActAgent`、`TroubleshootingAgent`、`Supervisor`；`AfterSalesAgent`（确定性管道）和 `ConsultationHandler`（无 LLM 循环）不做迁移；参考 `docs/solution/langgraph_upgrade_plan.md` | 按 TDD 执行 `P2.5-001` 起 |
+| 2026-05-28 | `P2.5-001` | 安装 langgraph 1.2.2 / langchain-core 1.4.0 / langchain-openai 1.2.2；创建 `llm/langchain_adapter.py`（`ChatServiceLLM` + `_convert_message` + `_serialize_args`）；**11 项适配层测试全部通过**；**全量 176/176 passed** | Pydantic 严格类型校验拒绝 MagicMock，改用 `arbitrary_types_allowed = True` | 实施 `P2.5-002` 工具转换层 |
+| 2026-05-28 | `P2.5-002` | 创建 `tools/langchain_convert.py`（`to_structured_tool` / `to_structured_tools`），用 Pydantic `create_model` 动态生成参数 schema；`ChatServiceLLM.bind_tools` 覆写完成（`convert_to_openai_function` + `self.bind(tools=...)`）；**6 项转换测试全部通过**；**全量 182/182 passed** | `StructuredTool` 无 `to_openai_function` 方法，改用 `langchain_core.utils.function_calling.convert_to_openai_function` | 实施 `P2.5-003` StateGraph 替换 BaseReActAgent |
+| 2026-05-28 | `P2.5-003` | 创建 `domain/customer_service/langgraph_agent.py`（`BaseLangGraphAgent`）；StateGraph：`agent` → 条件路由（`tools` / `terminal` / `END`）→ `tools` → `agent` 循环；`terminal` 节点处理 Finish/AskUser/Handoff 后直接 END；`_execute_tools` 自定义 tool node 保留 `ToolResult.citations`；**6 项 LangGraph Agent 测试通过**（含 search→finish citations 验证）；**全量 188/188 passed** | 旧 `BaseReActAgent`（`base_agent.py`）和旧 `agent.py` 保留不删除；`TerminalNode` 中 Finish 工具返回 "OK"，答案从 `tool_calls[0].args.answer` 提取 | 实施 `P2.5-004` Supervisor 原生 tool calling |
+| 2026-05-28 | `P2.5-004` | 创建 `domain/customer_service/langgraph_supervisor.py`（`LangGraphSupervisor`）；`bind_tools` 注入 5 个路由工具（RouteConsultation/RouteTroubleshooting/RouteAfterSales/AskUser/Handoff）；`_dispatch` 直接解析 `tool_calls[0].name/args` 替换正则；**5 项 Supervisor 测试全部通过**；**全量 193/193 passed** | 旧 `supervisor.py` 保留不删除；无 tool_calls 时降级为 Handoff | 实施 `P2.5-005` Checkpointer |
+| 2026-05-28 | `P2.5-005` | `MemorySaver` 注入 `_build_graph`；`run()` 使用 `thread_id=conversation_id` 配置；新增 `test_multiturn_same_conversation` 验证同会话上下文连贯；**7 项 Agent 测试全部通过**；**全量 194/194 passed** | 生产替换为 `PostgresSaver.from_conn_string(db_url)` 即可 | 实施 `P2.5-006` 全量回归与 M2.5 验收 |
+| 2026-05-28 | `P2.5-006`、`M2.5` | **全量 194/194 passed**；`verify_migration.py` SUCCESS；新增文件：`llm/langchain_adapter.py`、`tools/langchain_convert.py`、`domain/customer_service/langgraph_agent.py`、`domain/customer_service/langgraph_supervisor.py`；新增测试：`test_langchain_adapter.py`（11 项）、`test_langchain_convert.py`（6 项）、`test_langgraph_agent.py`（7 项）、`test_langgraph_supervisor.py`（5 项）；旧文件 `agent.py`、`base_agent.py`、`supervisor.py` 保留不删除 | `M2.5` 里程碑关闭；Phase 2.5 全部完成；新架构使用 LangGraph StateGraph + LangChain 原生 tool_calls + MemorySaver Checkpointer | 可进入 Phase 3 或切换 main.py 到新架构 |
 
 ## 10. 当前待办焦点
 
-`M3` 里程碑已关闭。Phase 2 全部任务（P2-001 至 P2-007）完成。
+`M2.5` 里程碑已关闭。Phase 2.5 全部任务（P2.5-001 至 P2.5-006）完成。
 
 **架构现状：**
 ```text
-Supervisor（意图路由 + 汇总）
-  ├── TroubleshootingAgent（独立 ReAct 循环 + search_faq）
+LangGraphSupervisor（LangChain 原生 tool calling 路由 + 汇总）
+  ├── TroubleshootingAgent（LangGraph StateGraph + MemorySaver Checkpointer）
   ├── AfterSalesAgent（确定性管道 + order/policy/eligibility）
   ├── ConsultationHandler（FAQ + policy 检索）
   └── HandoffWorkflow（转人工）
+
+新增文件：
+  llm/langchain_adapter.py          — ChatServiceLLM（BaseChatModel 适配）
+  tools/langchain_convert.py        — Tool → StructuredTool 转换
+  domain/customer_service/langgraph_agent.py       — BaseLangGraphAgent（StateGraph）
+  domain/customer_service/langgraph_supervisor.py  — LangGraphSupervisor（tool calling）
 ```
 
-下一阶段为 **Phase 3：企业级治理与真实接入**（`P3-001` 起），当前状态 `DEFERRED`，需用户确认后启动。
+旧文件 `agent.py`、`base_agent.py`、`supervisor.py` 保留不删除，可随时回退。
+
+下一阶段为 **Phase 3：企业级治理与真实接入**（`P3-001` 起），当前状态 `DEFERRED`。当前 `main.py` 仍使用旧 Supervisor，可选择切换到新 `LangGraphSupervisor`。

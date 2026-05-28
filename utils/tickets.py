@@ -5,6 +5,7 @@ from infrastructure.models import (
     INSERT_PENDING_ACTION,
     INSERT_SERVICE_TICKET,
     SELECT_PENDING_ACTION_FOR_UPDATE,
+    SELECT_SERVICE_TICKET_BY_ID,
     SELECT_SERVICE_TICKET_BY_ID_AND_USER,
     UPDATE_PENDING_ACTION_EXECUTED,
 )
@@ -112,11 +113,15 @@ class TicketRepository:
         finally:
             self.db.return_connection(conn)
 
-    def get_ticket(self, user_id: str, ticket_id: str):
+    def get_ticket(self, user_id: str = None, ticket_id: str = None):
+        if user_id:
+            sql = SELECT_SERVICE_TICKET_BY_ID_AND_USER
+            params = (ticket_id, user_id)
+        else:
+            sql = SELECT_SERVICE_TICKET_BY_ID
+            params = (ticket_id,)
         row = self.db.execute_one(
-            SELECT_SERVICE_TICKET_BY_ID_AND_USER,
-            (ticket_id, user_id),
-            fetch=True,
+            sql, params, fetch=True,
         )
         if row is None:
             return None

@@ -329,6 +329,13 @@ FROM service_tickets
 WHERE ticket_id = %s AND user_id = %s;
 """
 
+SELECT_SERVICE_TICKET_BY_ID = """
+SELECT ticket_id, user_id, order_id, ticket_type, issue_summary,
+       eligibility_code, status
+FROM service_tickets
+WHERE ticket_id = %s;
+"""
+
 UPDATE_PENDING_ACTION_EXECUTED = """
 UPDATE pending_actions
 SET status = 'executed', executed_ticket_id = %s, updated_at = NOW()

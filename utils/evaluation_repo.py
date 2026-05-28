@@ -19,6 +19,6 @@ class EvaluationRepository:
     def get_runs(self, case_id=None):
         return self.db.execute(
             SELECT_EVALUATION_RUNS,
-            (case_id,),
+            (case_id, case_id),
             fetch=True,
         )
