@@ -195,6 +195,20 @@ QA_agent/
 pip install -r requirements.txt
 ```
 
+推荐使用虚拟环境：
+
+```bash
+python -m venv .venv
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+# Windows CMD
+.\.venv\Scripts\activate.bat
+# Linux/Mac
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
 ### 2. 配置环境变量
 
 ```bash
@@ -211,18 +225,18 @@ docker compose up -d
 ### 4. 初始化数据库与模拟数据
 
 ```bash
-python scripts/init_db.py
-python scripts/seed_mock_data.py
+.\.venv\Scripts\python.exe scripts\init_db.py
+.\.venv\Scripts\python.exe scripts\seed_mock_data.py
 ```
 
 ### 5. 验证安装
 
 ```bash
 # 全量回归测试（194 项）
-pytest -q
+.\.venv\Scripts\python.exe -m pytest -q
 
 # 启动后端
-python main.py
+.\.venv\Scripts\python.exe main.py
 ```
 
 ### 6. 启动前端（可选）
