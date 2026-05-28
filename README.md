@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-An intelligent customer service multi-agent system built on RAG, supporting multi-turn conversations, proactive questioning, LangGraph-based agent orchestration, simulated after-sales workflows, and a Vue 3 testing frontend.
+基于 RAG 的多智能体客服系统，支持多轮对话、主动反问、LangGraph 多智能体编排、模拟售后办理流程和 Vue 3 测试前端。
 
 ## 目录结构
 
@@ -73,29 +73,6 @@ QA_agent/
 │   ├── verify_migration.py     # 迁移验证脚本
 │   └── smoke_test.py           # 功能冒烟测试
 ├── tests/                      # 自动化测试
-│   ├── test_agent_actions.py
-│   ├── test_agent_citations.py
-│   ├── test_agent_diagnosis.py
-│   ├── test_agent_workflow.py
-│   ├── test_eligibility_rules.py
-│   ├── test_conversation.py
-│   ├── test_identity_and_conversations.py
-│   ├── test_mock_data.py
-│   ├── test_orders_api.py
-│   ├── test_security_gate.py
-│   ├── test_ticket_full.py
-│   ├── test_ticket_query_api.py
-│   ├── test_handoff_summary.py
-│   ├── test_admin_api.py
-│   ├── test_evaluation_repo.py
-│   ├── test_sub_agent_protocol.py
-│   ├── test_tool_registry.py
-│   ├── test_supervisor.py
-│   ├── test_comparison.py
-│   ├── test_langchain_adapter.py
-│   ├── test_langchain_convert.py
-│   ├── test_langgraph_agent.py
-│   └── test_langgraph_supervisor.py
 ├── data/                       # 数据目录
 │   └── chroma/                 # 向量数据库
 ├── docs/                       # 文档目录
@@ -111,205 +88,91 @@ QA_agent/
 
 本项目包含三份开发指南文档，用于 Vibe Coding 协作开发：
 
-### 文档说明
-
 | 文档 | 用途 | 适用场景 |
 |------|------|----------|
-| `guide.md` | **基础版**：RAG 检索增强服务 | 从零搭建 RAG 服务（向量入库 + 检索 + HTTP 接口） |
-| `guide_agent_extension_clean.md` | **精简版**：ReAct Agent 扩展 | 在已有 RAG 服务基础上扩展 Agent 能力，适合作为 Vibe Coding 指引 |
-| `guide_agent_extension.md` | **详细版**：ReAct Agent 扩展（参考用） | 包含完整实现细节，可借鉴具体代码和设计思路 |
+| `guide.md` | 基础版：RAG 检索增强服务 | 从零搭建 RAG 服务（向量入库 + 检索 + HTTP 接口） |
+| `guide_agent_extension_clean.md` | 精简版：ReAct Agent 扩展 | 在已有 RAG 服务基础上扩展 Agent 能力 |
+| `guide_agent_extension.md` | 详细版：ReAct Agent 扩展（参考用） | 包含完整实现细节，可借鉴具体代码和设计思路 |
 
-### 使用方式
-
-**场景一：从零开始搭建 RAG 服务**
-
-```
-阅读 guide.md → 按章节逐步开发 → 完成基础 RAG 服务
-```
-
-**场景二：在 RAG 服务基础上扩展 Agent**
-
-```
-阅读 guide_agent_extension_clean.md → 理解架构变更 → 与 AI 协作开发
-```
-
-**场景三：遇到具体实现问题**
-
-```
-查阅 guide_agent_extension.md → 找到对应章节 → 参考详细实现
-```
-
-### 文档关系
-
-```
-guide.md（基础 RAG 服务）
-    │
-    └──→ guide_agent_extension_clean.md（Agent 扩展指引）
-              │
-              └──→ guide_agent_extension.md（详细实现参考）
-```
-
-### 为什么有两个 Agent 扩展文档？
-
-| 对比项 | `guide_agent_extension_clean.md` | `guide_agent_extension.md` |
-|--------|----------------------------------|---------------------------|
-| 定位 | Vibe Coding 指引 | 实现参考手册 |
-| 内容 | 架构设计 + 任务清单 + 完成标志 | 完整代码 + 详细步骤 |
-| 灵活性 | 高（AI 可自由发挥） | 低（固定了具体实现） |
-| 适用 | 与 AI 协作开发 | 查阅具体实现细节 |
-
-**建议**：开发时以 `clean` 版本为主，遇到问题时查阅详细版参考。
-
----
+**使用方式：** 开发时以 `clean` 版本为主，遇到问题时查阅详细版参考。
 
 ## 开发进度
 
 ### Step 1: 项目初始化 —— 目录重组与迁移 ✅
 
-**已完成工作：**
-
-1. **目录重组** — Created new directory structure (`llm/`, `tools/`, `utils/`, `domain/`, `apps/`, `infrastructure/`), conforming to a four-layer architecture: application → domain → tools/llm/utils → infrastructure.
-
-2. **模块迁移** — `model/chat.py` → `llm/client.py`, `model/exceptions.py` → `llm/exceptions.py`, `rag/` → `infrastructure/rag/`.
-
-3. **旧目录清理** — Removed `retriever/`, `api/`, and old `model/` and `rag/` directories.
-
-4. **占位文件创建** — Placeholder implementations for `tools/base.py`, `utils/conversation.py`, and `domain/customer_service/agent.py`.
+已完成目录结构重组（`llm/`、`tools/`、`utils/`、`domain/`、`apps/`、`infrastructure/` 四层架构），模块迁移和旧目录清理。
 
 ---
 
 ### Step 2: 工具层 —— Tool 基类与 FAQ 检索工具 ✅
 
-**已完成工作：**
-
-1. **Tool 基类完善** (`tools/base.py`) — `ToolParameter` for parameter definitions, `Tool` as a tool encapsulation with `run(params: dict) -> str` as the sole Agent entry point supporting required parameter validation and optional defaults, `to_prompt_desc() -> str` for generating tool descriptions injected into prompts, and `to_openai_schema() -> dict` reserved for future OpenAI function calling format.
-
-2. **FAQ 检索工具实现** (`tools/faq_search.py`) — A pure function `search_faq(query, top_k=5) -> str` that calls `VectorStore.search()`, and a corresponding `search_faq_tool` Tool object.
-
-3. **设计原则** — Functions and Tool objects are separated; pure functions can be directly imported by any module; "Tool 是薄封装层，不包含业务逻辑"; new tools simply require a new file (function + Tool object) appended to the Agent's tools list.
+完成 `Tool` + `ToolParameter` 基类（参数校验、prompt 描述生成、OpenAI function calling 格式预留），实现 `search_faq` 检索工具。
 
 ---
 
 ### Step 3: 会话管理模块 ✅
 
-**已完成工作：**
-
-1. **数据库连接管理** (`infrastructure/database.py`) — `DatabaseManager` class with PostgreSQL connection pool management, supporting `execute()` and `execute_one()` methods with automatic connection acquisition and return.
-
-2. **数据模型定义** (`infrastructure/models.py`) — `conversations` table (conversation_id, user_id, title, status) and `messages` table (role, content, turn_number, metadata), with `turn_number` auto-calculated: user messages increment the turn, assistant messages reuse the current value.
-
-3. **会话管理器** (`utils/conversation.py`) — Methods for creating conversations, adding messages, getting recent N turns of context, retrieving full history, listing user conversations, and closing conversations.
-
-4. **依赖更新** — Added `psycopg2-binary` to `requirements.txt` and `CONVERSATION_DB_URL` to `.env.example`.
+完成 PostgreSQL 连接池管理（`DatabaseManager`）、会话/消息表结构定义、`ConversationManager` 实现（创建/追加/上下文截取/历史查询）。
 
 ---
 
 ### Step 4: 模型层确认 ✅
 
-This step confirms the `llm/` module was already migrated in Phase 1, requiring no additional development.
-
-1. **模块单例导出** — `chat_service = ChatService()` as a module-level singleton, accessible via `from llm import chat_service`.
-
-2. **核心方法签名** — `chat(prompt, system_prompt=None, history=None, temperature=0.7, max_tokens=None) -> str`
-
-3. **特性支持** — Exponential backoff retry for network timeouts and rate limits, classified exception handling (`ModelTimeoutError`, `ModelRateLimitError`, `ModelAuthenticationError`), and a reserved `chat_stream()` method.
+确认 `llm/` 模块已迁移完成，提供 `chat(prompt, system_prompt, history)` 核心方法，支持指数退避重试和分类异常处理。
 
 ---
 
 ### Step 5: 领域层 —— ReAct Agent ✅
 
-**已完成工作：**
-
-1. **Prompt 模板** (`domain/customer_service/prompts.py`) — `SYSTEM_PROMPT` covering role setting, tool descriptions, workflow, and output format; `build_prompt()` fills `{tools}`, `{context}`, `{user_input}`, `{history}` placeholders.
-
-2. **Agent 核心实现** (`domain/customer_service/agent.py`) — `AgentResponse` structure (type, content, conversation_id, metadata); `CustomerServiceAgent` with constructor injection of llm, conversation_manager, tools, and max_steps, exposing `run(user_input, conversation_id) → AgentResponse`.
-
-3. **ReAct 循环实现** — Persists user messages, retrieves context, loops execution, returns results. Supports `search_faq[关键词]` and `Finish[最终答案]` actions; step_history is kept in memory only; parse failures `continue` to let the LLM retry; max_steps reached triggers a fallback message.
-
-4. **内部能力** — Tool lookup by name, tools description generation, conversation history formatting, regex-based Thought/Action parsing, intelligent parameter mapping (JSON → single param → fallback), and tool dispatch execution.
+完成 Prompt 模板体系（角色设定 + 工具说明 + 输出格式）、`CustomerServiceAgent` 核心实现、ReAct 循环（Thought/Action 正则解析、工具调度、max_steps 兜底）。
 
 ---
 
 ### Step 6: 应用层 —— API 接口服务 ✅
 
-**已完成工作：**
-
-1. **FastAPI 入口** (`main.py`) — Lifespan-managed dependency lifecycle (create/destroy); global singletons for `conversation_manager` and `agent`; routes mounted under `/api` prefix.
-
-2. **Pydantic 模型** (`apps/customer_service/schemas.py`) — `ChatRequest` / `ChatResponse`, `CreateConversationRequest` / `CreateConversationResponse`, `ConversationDetail` / `ConversationListResponse`.
-
-3. **API 路由** (`apps/customer_service/routes.py`)
-   - Internal trial identification via `X-QA-User-Id` header
-   - `POST /api/chat`, `POST /api/conversations`, `GET /api/conversations`, `GET /api/conversations/{id}`
-   - `GET /api/orders`, `GET /api/orders/{id}`
-
-4. **启动方式**
-   ```bash
-   python main.py
-   # or
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
+完成 FastAPI 入口配置、Pydantic 模型定义、API 路由（聊天/会话/订单）、Swagger 文档。
 
 ---
 
 ### Step 7: 多智能体客服系统 ✅
 
-**已完成工作：**
+**1. 多智能体架构设计**
+- Supervisor + 领域子 Agent 架构
+- 四层架构：应用层 → 领域层（Supervisor/子 Agent）→ 工具/服务层 → 基础设施层
+- 统一响应协议：final_answer / ask_user / confirm_action / handoff / error
 
-1. **多智能体架构设计** (`docs/solution/customer-service-multi-agent-solution.md`)
-   - Supervisor + 领域子 Agent 架构
-   - 四层架构：应用层 → 领域层（Supervisor/子 Agent）→ 工具/服务层 → 基础设施层
-   - 响应协议：final_answer / ask_user / confirm_action / handoff / error
+**2. LangGraph 框架集成**
+- LangChain 适配层：`ChatServiceLLM` 包装为 `BaseChatModel`
+- 工具转换层：`Tool` → `StructuredTool` 转换
+- `BaseLangGraphAgent`：StateGraph 替代自研 ReAct 循环
+- `LangGraphSupervisor`：LangChain 原生 tool_calls 路由
+- Checkpointer：`MemorySaver`，线程 ID = conversation_id
 
-2. **LangGraph 框架集成**
-   - LangChain 适配层 (`llm/langchain_adapter.py`)：`ChatServiceLLM` 包装为 `BaseChatModel`
-   - 工具转换层 (`tools/langchain_convert.py`)：`Tool` → `StructuredTool` 转换
-   - `BaseLangGraphAgent` (`domain/customer_service/langgraph_agent.py`)：StateGraph 替代自研 ReAct 循环
-   - `LangGraphSupervisor` (`domain/customer_service/langgraph_supervisor.py`)：LangChain tool_calls 路由
-   - Checkpointer：`MemorySaver`（开发阶段），线程 ID = conversation_id
+**3. 领域子 Agent**
+- `ConsultationHandler`：产品/政策咨询，无 LLM 循环，直接检索+格式化
+- `TroubleshootingAgent`：故障排查，LangGraph StateGraph，多轮槽位收集
+- `AfterSalesAgent`：售后办理，确定性管道，从对话历史提取订单号/办理类型/问题原因
 
-3. **领域子 Agent**
-   - `ConsultationHandler`：产品/政策咨询，无 LLM 循环，直接检索+格式化
-   - `TroubleshootingAgent`：故障排查，LangGraph StateGraph，多轮槽位收集
-   - `AfterSalesAgent`：售后办理，确定性管道，提取对话历史信息
+**4. 售后业务闭环**
+- `EligibilityRuleService`：确定性资格规则（退换/保修/付费维修边界）
+- `TicketActionService`：待确认动作创建与幂等确认
+- 写操作保护：未确认不建单，幂等重复确认不重复建单，30 分钟有效期
 
-4. **售后业务闭环**
-   - `EligibilityRuleService`：确定性资格规则（退换/保修/付费维修边界）
-   - `TicketActionService`：待确认动作创建与幂等确认
-   - `MockOrderTool` / `MockTicketTool`：模拟订单与工单
-   - 写操作保护：未确认不建单，幂等重复确认不重复建单，30 分钟有效期
+**5. 身份与权限**
+- 内部试用认证：`X-QA-User-Id` 请求头
+- 会话/订单/工单按 user_id 归属校验
+- 管理端 RBAC：`require_admin` 依赖
 
-5. **身份与权限**
-   - 内部试用认证：`X-QA-User-Id` 请求头
-   - 会话/订单/工单按 user_id 归属校验
-   - 管理端 RBAC：`require_admin` 依赖，admin_zhang 种子管理员
+**6. 审计与评测**
+- `agent_runs` / `tool_calls` / `risk_events` / `handoff_records` 四表审计
+- 14 个评测场景覆盖产品咨询、故障排查、售后办理、权限隔离
 
-6. **审计与评测**
-   - `agent_runs` / `tool_calls` / `risk_events` / `handoff_records` 四表审计
-   - `evaluation_cases` / `evaluation_runs` 评测数据
-   - 14 个评测场景覆盖产品咨询、故障排查、售后办理、权限隔离
+**7. Vue 3 前端测试界面** (`frontend_new/`)
+- Vue 3 + TypeScript + Vite + Element Plus + Pinia + Vue Router
+- 6 个页面：对话窗口、订单管理、工单查询、审计日志、评测结果、系统状态
+- 响应类型标识和待确认动作交互
 
-7. **Vue 3 前端测试界面** (`frontend_new/`)
-   - Vue 3 + TypeScript + Vite + Element Plus + Pinia + Vue Router
-   - 6 个页面：对话窗口、订单管理、工单查询、审计日志、评测结果、系统状态
-   - 响应类型标识：final_answer / ask_user / confirm_action / handoff / error
-   - 待确认动作交互（确认按钮）
-   - 引用来源展开查看
-
-**验证方式：**
-
-```bash
-# 全量回归测试（194 项）
-.\.venv\Scripts\python.exe -m pytest -q
-
-# 数据库初始化
-.\.venv\Scripts\python.exe scripts\init_db.py
-
-# 模拟数据导入
-.\.venv\Scripts\python.exe scripts\seed_mock_data.py
-```
-
-## 多智能体架构
+### 架构
 
 ```
 用户 → FastAPI API → Auth → LangGraphSupervisor
@@ -323,16 +186,6 @@ This step confirms the `llm/` module was already migrated in Phase 1, requiring 
                                                     │
                                                ConfirmAction → Ticket
 ```
-
-### 响应协议
-
-| 类型 | 含义 | 客户端行为 |
-|------|------|-----------|
-| `final_answer` | 最终回答 | 展示答案 + 引用来源 |
-| `ask_user` | 反问澄清 | 展示澄清问题，等待用户输入 |
-| `confirm_action` | 待确认写操作 | 显示确认按钮和动作摘要 |
-| `handoff` | 转人工 | 展示转人工提示 + 摘要 |
-| `error` | 可恢复错误 | 展示错误信息，引导重试 |
 
 ## 快速开始
 
@@ -360,14 +213,13 @@ docker compose up -d
 ```bash
 python scripts/init_db.py
 python scripts/seed_mock_data.py
-python scripts/import_faq.py
 ```
 
 ### 5. 验证安装
 
 ```bash
-# 离线回归测试
-.\.venv\Scripts\python.exe -m pytest -q
+# 全量回归测试（194 项）
+pytest -q
 
 # 启动后端
 python main.py
