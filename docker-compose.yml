@@ -18,5 +18,20 @@ services:
       timeout: 5s
       retries: 5
 
+  frontend:
+    build:
+      context: ./frontend_new
+      dockerfile: Dockerfile.frontend
+    container_name: qa_agent_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend_new/src:/app/src
+    environment:
+      - VITE_API_TARGET=http://host.docker.internal:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:
